@@ -1,0 +1,16 @@
+{
+    "files.trimTrailingWhitespace": true,
+    "editor.renderFinalNewline": "on",
+    "files.trimFinalNewlines": true,
+    "ansible.ansible.useFullyQualifiedCollectionNames": true,
+    "ansible.ansibleNavigator.path": "ansible-navigator",
+    "ansible.validation.lint.enabled": true,
+    "ansible.validation.enabled": true,
+    "ansible.executionEnvironment.image": "quay.io/zleblanc/ee-default",
+    "ansible.executionEnvironment.enabled": true,
+    "ansible.executionEnvironment.containerEngine": "auto",
+    "ansible.executionEnvironment.pull.policy": "missing",
+    "ansible.lightspeed.enabled": true,
+    "ansible.lightspeed.URL": "https://c.ai.ansible.redhat.com",
+    "ansible.lightspeed.suggestions.enabled": true,
+}
