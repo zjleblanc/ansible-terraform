@@ -12,4 +12,4 @@ Playbooks included support executing Terraform operations via Ansible and config
 
 | Playbook | Description |
 | --- | --- |
-| [tf_ops.yml](./ansible/tf_ops.yml) | Based on tags, will either complete the terrform apply or terraform destroy step |
+| [tf_ops.yml](./ansible/tf_ops.yml) | Based on tags, will either complete the `terraform apply` or `terraform destroy` action |
