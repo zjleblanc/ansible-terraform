@@ -9,6 +9,7 @@ terraform {
 }
 
 # Configure the Microsoft Azure Provider
+# Source from environment variables TF_VAR_*
 provider "azurerm" {
   features {}
 

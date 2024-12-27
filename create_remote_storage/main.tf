@@ -1,9 +1,3 @@
-resource "random_string" "resource_code" {
-  length  = 5
-  special = false
-  upper   = false
-}
-
 resource "azurerm_storage_account" "tfstate" {
   name                     = var.az_storage_account
   resource_group_name      = var.az_resource_group
