@@ -6,6 +6,7 @@
 
   vars:
     tf_project_dir: "{{ playbook_dir | dirname }}"
+    backend_conf: "{{ lookup('ansible.builtin.env', 'TF_BACKEND_CONFIG_FILE') }}"
 
   tasks:
     - name: terraform apply | create_web_demo
@@ -13,12 +14,14 @@
         project_path: "{{ tf_project_dir }}"
         state: present
         force_init: true
+        backend_config_files:
+          - "{{ backend_conf }}"
 
     - name: terraform destroy | create_web_demo
+      tags: [never, remove]
       cloud.terraform.terraform:
         project_path: "{{ tf_project_dir }}"
         state: absent
         force_init: true
-      tags:
-        - never
-        - remove
+        backend_config_files:
+          - "{{ backend_conf }}"
