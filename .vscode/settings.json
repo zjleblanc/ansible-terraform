@@ -13,4 +13,5 @@
     "ansible.lightspeed.enabled": true,
     "ansible.lightspeed.URL": "https://c.ai.ansible.redhat.com",
     "ansible.lightspeed.suggestions.enabled": true,
+    "ansible.python.interpreterPath": "/Users/zach/repos/ansible-terraform/.venv/bin/python",
 }

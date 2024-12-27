@@ -4,15 +4,10 @@ resource "random_string" "resource_code" {
   upper   = false
 }
 
-resource "azurerm_resource_group" "tfstate" {
-  name     = var.az_resource_group
-  location = "southcentralus"
-}
-
 resource "azurerm_storage_account" "tfstate" {
   name                     = var.az_storage_account
-  resource_group_name      = azurerm_resource_group.tfstate.name
-  location                 = azurerm_resource_group.tfstate.location
+  resource_group_name      = var.az_resource_group
+  location                 = var.az_resource_group_loc
   account_tier             = "Standard"
   account_replication_type = "LRS"
   allow_nested_items_to_be_public = false

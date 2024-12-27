@@ -1,0 +1,24 @@
+---
+- name: Terraform operations
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  vars:
+    tf_project_dir: "{{ playbook_dir | dirname }}"
+
+  tasks:
+    - name: terraform apply | create_web_demo
+      cloud.terraform.terraform:
+        project_path: "{{ tf_project_dir }}"
+        state: present
+        force_init: true
+
+    - name: terraform destroy | create_web_demo
+      cloud.terraform.terraform:
+        project_path: "{{ tf_project_dir }}"
+        state: absent
+        force_init: true
+      tags:
+        - never
+        - remove
