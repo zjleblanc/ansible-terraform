@@ -12,6 +12,7 @@
 
   vars:
     tf_project_dir: "{{ playbook_dir | dirname }}"
+    tf_project_key: az_web_demo # this is used to identify the remote state in blob storage
     backend_conf: "{{ lookup('ansible.builtin.env', 'TF_BACKEND_CONFIG_FILE') }}"
 
   tasks:
@@ -20,6 +21,8 @@
         project_path: "{{ tf_project_dir }}"
         state: present
         force_init: true
+        backend_config:
+          key: "{{ tf_project_key }}"
         backend_config_files:
           - "{{ backend_conf }}"
 
