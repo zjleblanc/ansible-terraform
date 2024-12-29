@@ -1,9 +1,3 @@
-variable "az_client_id" {}
-variable "az_client_secret" {}
-variable "az_tenant" {}
-variable "az_subscription" {}
-variable "az_storage_account_key" {}
-
 # Generic Az vars
 variable "az_resource_group" { default = "tf-web-demo-rg" }
 variable "az_region" { default = "southcentralus" }
