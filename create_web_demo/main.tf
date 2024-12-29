@@ -85,7 +85,7 @@ resource "azurerm_ssh_public_key" "web_demo" {
   name                = var.web_demo_ssh_pubkey_name
   resource_group_name = azurerm_resource_group.web_demo.name
   location            = azurerm_resource_group.web_demo.location
-  public_key          = file(var.web_demo_ssh_pubkey_local_path)
+  public_key          = var.web_demo_ssh_pubkey
   tags = var.web_tags_base
 }
 
