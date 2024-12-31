@@ -6,7 +6,7 @@
     "ansible.ansibleNavigator.path": "ansible-navigator",
     "ansible.validation.lint.enabled": true,
     "ansible.validation.enabled": true,
-    "ansible.executionEnvironment.image": "quay.io/zleblanc/ee-default",
+    "ansible.executionEnvironment.image": "quay.io/scottharwell/cloud-ee",
     "ansible.executionEnvironment.enabled": true,
     "ansible.executionEnvironment.containerEngine": "auto",
     "ansible.executionEnvironment.pull.policy": "missing",

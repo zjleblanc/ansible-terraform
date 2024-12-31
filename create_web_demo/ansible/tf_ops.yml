@@ -17,7 +17,7 @@
 
 
   tasks:
-    - name: terraform apply | create_web_demo
+    - name: Terraform apply | create_web_demo
       cloud.terraform.terraform:
         project_path: "{{ tf_project_dir }}"
         state: present
@@ -29,11 +29,13 @@
         variables:
           web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
 
-    - name: terraform destroy | create_web_demo
+    - name: Terraform destroy | create_web_demo
       tags: [never, remove]
       cloud.terraform.terraform:
         project_path: "{{ tf_project_dir }}"
         state: absent
         force_init: true
+        backend_config:
+          key: "{{ tf_project_key }}"
         backend_config_files:
           - "{{ backend_conf }}"
