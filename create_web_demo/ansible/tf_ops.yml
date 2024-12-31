@@ -40,4 +40,4 @@
         backend_config_files:
           - "{{ backend_conf }}"
         variables:
-          web_demo_ssh_pubkey: "{{ az_ssh_pubkey | default('not_applicable') }}"
+          web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
