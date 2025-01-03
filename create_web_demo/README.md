@@ -6,13 +6,59 @@ This Terraform project contains the configurations required to deploy two Azure 
 - [Variables](./variables.tf)
 - [Main](./main.tf)
 
-## Ansible
+## Terraform
+
+### Resources
+
+The infrastructure is pretty simple:
+- basic Azure networking resources
+- security rules to allow for SSH (not production grade)
+- a couple of vms
+- ssh key pair
+
+### Important Variables
+
+| Variable | Purpose |
+| --- | --- |
+| az_resource_group | Target resource group |
+| az_region | Azure region for the resource group / infrastructure |
+| web_tags_base | Base tags for resources deploy - I **always** recommend tags |
+| web_* | Other variables for standardized naming of deployed resources |
+
+## Ansible Playbook
 
 Playbooks included support executing Terraform operations via Ansible and configuration of the provisioned infrastructure. The complete product is a Workflow Job Template in Ansible Automation Platform which chains together the execution of the playbooks.
 
 | Playbook | Description |
 | --- | --- |
 | [tf_ops.yml](./ansible/tf_ops.yml) | Based on tags, will either complete the `terraform apply` or `terraform destroy` action |
+
+## AAP Workflow
+
+To tie everything together in an enterprise-grade workflow, you will need to create a few resources in Ansible Automation Platform. Below is a list of the resources I created and relationships between them:
+
+```yaml
+Project: Ansible-Terraform Mgmt # connected to this GitHub repository
+Execution_Environment: ee-cloud # using publicly available image -> quay.io/scottharwell/cloud-ee
+Credentials:
+  - Type: Microsoft Azure Resource Manager
+    Purpose: authenticating with ARM API (environment block in tf_ops playbook)
+  - Type: Terraform backend configuration
+    Purpose: supplies the backend.conf file as encrypted content and sets the TF_BACKEND_CONFIG_FILE environment variable
+  - Type: Machine
+    Purpose: injects the admin user and private key associated with the key-pair tied to the VMs in Azure for SSH
+Job_Templates:
+  - Name: Terraform // Web Demo Deploy
+    Execution_Environment: ee-cloud # see above
+    Project: Ansible-Terraform Mgmt # see above
+    Playbook: tf_ops.yml
+    Credentials:
+      - Microsoft Azure Resource Manager # see above
+      - Terraform backend configuration  # see above
+    Survey:
+      - Question: SSH public key
+        Variable: az_ssh_pubkey
+```
 
 ## Lessons Learned
 

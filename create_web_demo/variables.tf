@@ -9,9 +9,6 @@ variable "web_tags_base" {
     config = "ansible"
   }
 }
-# Backend storage vars
-variable "backend_resource_group" { default = "openenv-jmdmt" }
-variable "backend_storage_account" { default = "zjltfstatemgmtsa" }
 # Web demo vars
 variable "web_nic_name" { default = "web-demo-nic" }
 variable "web_vm_name" { default = "web-demo-vm" }
