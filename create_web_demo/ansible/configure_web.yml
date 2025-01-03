@@ -4,7 +4,7 @@
 
   tasks:
     - name: Install httpd
-      ansible.builtin.dnf:
+      ansible.builtin.package:
         name: httpd
         state: present
 
