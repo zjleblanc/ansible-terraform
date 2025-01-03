@@ -99,9 +99,9 @@ resource "azurerm_linux_virtual_machine" "web_demo" {
   tags = var.web_tags_base
 
   source_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    publisher = "redhat-limited"
+    offer     = "rh-rhel"
+    sku       = "rh-rhel8"
     version   = "latest"
   }
 
