@@ -50,6 +50,19 @@ resource "azurerm_network_security_group" "web_demo" {
     destination_port_range     = "443"
     description = "allow https traffic for web server"
   }
+
+  security_rule {
+    name                       = "http"
+    priority                   = 102
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
+    destination_port_range     = "80"
+    description = "allow http traffic for web server"
+  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "web_demo" {

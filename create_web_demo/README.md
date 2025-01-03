@@ -41,7 +41,7 @@ Playbooks included support executing Terraform operations via Ansible and config
 To tie everything together in an enterprise-grade workflow, you will need to create a few resources in Ansible Automation Platform. Below is a list of the resources I created and relationships between them:
 
 ```yaml
-Project: Ansible-Terraform Mgmt # connected to this GitHub repository
+Project: Terraform Mgmt # connected to this GitHub repository
 Execution_Environment: ee-cloud # using publicly available image -> quay.io/scottharwell/cloud-ee
 Credentials:
   - Type: Microsoft Azure Resource Manager
@@ -53,7 +53,7 @@ Credentials:
 Job_Templates:
   - Name: Terraform // Web Demo Deploy
     Execution_Environment: ee-cloud # see above
-    Project: Ansible-Terraform Mgmt # see above
+    Project: Terraform Mgmt # see above
     Playbook: tf_ops.yml
     Credentials:
       - Microsoft Azure Resource Manager # see above

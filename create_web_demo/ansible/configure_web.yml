@@ -15,6 +15,13 @@
         enabled: true
         state: started
 
+    - name: Allow http traffic
+      ansible.posix.firewalld:
+        port: 80/tcp
+        permanent: true
+        state: enabled
+        zone: public
+
     # - name: Create a custom index.html file
     #   ansible.builtin.copy:
     #     dest: /var/www/html/index.html
