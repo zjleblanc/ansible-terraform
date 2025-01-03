@@ -1,6 +1,7 @@
 ---
 - name: Configure web server
   hosts: tag_demo_web
+  become: true
 
   tasks:
     - name: Install httpd
