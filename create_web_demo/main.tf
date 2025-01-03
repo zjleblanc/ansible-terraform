@@ -99,9 +99,9 @@ resource "azurerm_linux_virtual_machine" "web_demo" {
   tags = var.web_tags_base
 
   source_image_reference {
-    publisher = "redhat-limited"
-    offer     = "rh-rhel"
-    sku       = "rh-rhel8"
+    publisher = "RedHat"
+    offer     = "RHEL"
+    sku       = "810-gen2"
     version   = "latest"
   }
 

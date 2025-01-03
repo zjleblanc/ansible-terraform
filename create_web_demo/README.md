@@ -16,6 +16,9 @@ The infrastructure is pretty simple:
 - a couple of vms
 - ssh key pair
 
+Lookup **source_image_reference** configurations for VMs using the Azure CLI:<br>
+`az vm image list --publisher RedHat --all --output table`
+
 ### Important Variables
 
 | Variable | Purpose |
