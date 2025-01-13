@@ -22,10 +22,13 @@
       ansible.posix.firewalld:
         port: 80/tcp
         permanent: true
+        immediate: true
         state: enabled
         zone: public
 
     - name: Create a custom index.html file
+      vars:
+        subtitle: "running on azure vm {{ computer_name }} @ {{ public_ipv4_address }}"
       ansible.builtin.template:
         dest: /var/www/html/index.html
         src: index.html.j2
