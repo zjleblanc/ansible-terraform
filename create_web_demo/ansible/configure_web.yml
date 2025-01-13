@@ -3,6 +3,9 @@
   hosts: tag_demo_web
   become: true
 
+  vars_files:
+    - vars/main.yml
+
   tasks:
     - name: Install httpd
       ansible.builtin.package:
@@ -22,10 +25,7 @@
         state: enabled
         zone: public
 
-    # - name: Create a custom index.html file
-    #   ansible.builtin.copy:
-    #     dest: /var/www/html/index.html
-    #     content: |
-    #       Enable SysAdmin Demo:
-    #       Ansible Profiling with Callback Plugin
-    #       Custom Web Page
+    - name: Create a custom index.html file
+      ansible.builtin.template:
+        dest: /var/www/html/index.html
+        src: index.html.j2
