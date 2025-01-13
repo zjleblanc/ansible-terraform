@@ -6,9 +6,9 @@ info_list_kvpairs:
     value: "{{ ansible_host }}"
   - key: mac address
     value: "{{ mac_address[0] }}"
-  - key: public ip address
-    value: "{{ public_ipv4_address }}"
-  - key: private ip addresse(s)
+  - key: public ip addresses
+    value: "{{ public_ipv4_address | default([]) | join(',') }}"
+  - key: private ip addresses
     value: "{{ private_ipv4_addresses | default([]) | join(',') }}"
   - key: image
     value: "{{ image['offer'] }} {{ image['sku'] }}:{{ image['version'] }}"

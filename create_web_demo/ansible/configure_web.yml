@@ -28,7 +28,7 @@
 
     - name: Create a custom index.html file
       vars:
-        subtitle: "running on azure vm {{ computer_name }} @ {{ public_ipv4_address }}"
+        subtitle: "running on azure vm {{ computer_name }} @ {{ public_ipv4_address[0] }}"
       ansible.builtin.template:
         dest: /var/www/html/index.html
         src: index.html.j2
