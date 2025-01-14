@@ -32,3 +32,7 @@
       ansible.builtin.template:
         dest: /var/www/html/index.html
         src: index.html.j2
+
+    - name: Check out the site
+      ansible.builtin.debug:
+        msg: "Go to http://{{ public_ipv4_address[0] }}"
