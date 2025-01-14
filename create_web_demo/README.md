@@ -41,26 +41,178 @@ Playbooks included support executing Terraform operations via Ansible and config
 To tie everything together in an enterprise-grade workflow, you will need to create a few resources in Ansible Automation Platform. Below is a list of the resources I created and relationships between them:
 
 ```yaml
-Project: Terraform Mgmt # connected to this GitHub repository
-Execution_Environment: ee-cloud # using publicly available image -> quay.io/scottharwell/cloud-ee
-Credentials:
-  - Type: Microsoft Azure Resource Manager
-    Purpose: authenticating with ARM API (environment block in tf_ops playbook)
-  - Type: Terraform backend configuration
-    Purpose: supplies the backend.conf file as encrypted content and sets the TF_BACKEND_CONFIG_FILE environment variable
-  - Type: Machine
-    Purpose: injects the admin user and private key associated with the key-pair tied to the VMs in Azure for SSH
-Job_Templates:
-  - Name: Terraform // Web Demo Deploy
-    Execution_Environment: ee-cloud # see above
-    Project: Terraform Mgmt # see above
-    Playbook: tf_ops.yml
-    Credentials:
-      - Microsoft Azure Resource Manager # see above
-      - Terraform backend configuration  # see above
-    Survey:
-      - Question: SSH public key
-        Variable: az_ssh_pubkey
+# projects.yml
+---
+controller_projects:
+  - name: Terraform Mgmt
+    scm_url: https://github.com/zjleblanc/ansible-terraform.git
+    organization: Autodotes
+    scm_branch: master
+    scm_type: git
+```
+
+```yaml
+# execution_environments.yml
+---
+controller_execution_environments:
+  - name: ee-default
+    description: my default execution environment with all the collections and libraries \
+    image: quay.io/zleblanc/ee-default:87a71cbb
+  - name: ee-cloud
+    description: Scott Harwell's Cloud EE hosted in quay
+    image: quay.io/scottharwell/cloud-ee
+
+```
+
+```yaml
+# credentials.yml
+---
+controller_credentials:
+- name: AAP (id_rsa)
+  organization: Autodotes
+  description: SSH credential for connecting as zach user
+  credential_type: Machine
+  inputs:
+    become_method: ''
+    become_username: ''
+    ssh_key_data: "{{ controller_credential_ansible_ssh_key }}"
+    username: zach
+- name: Terraform Backend Azure Storage Credential
+  description: Terraform backend configuration for Azure storage account in your Azure subscription
+  organization: Autodotes
+  credential_type: Terraform backend configuration
+  inputs:
+    configuration: |
+      resource_group_name  = "openenv-jmdmt"
+      storage_account_name = "zjltfstatemgmtsa"
+      container_name       = "tfstate"
+      access_key           = "{{ controller_credential_az_tf_backend_key  }}"
+- name: Azure RM Service Principal
+  description: service principal with perms to deploy in your Azure subscription
+  organization: Autodotes
+  credential_type: Microsoft Azure Resource Manager
+  inputs:
+    client: "{{ controller_credential_azure_client }}"
+    secret: "{{ controller_credential_azure_secret }}"
+    subscription: "{{ controller_credential_azure_subscription }}"
+    tenant: "{{ controller_credential_azure_tenant }}"
+```
+
+```yaml
+# job_templates.yml
+---
+controller_templates:
+- name: Terraform // Web Demo Deploy
+  description: Deploy web demo to Azure using terraform modules
+  labels:
+    - Demo
+  project: Terraform Mgmt
+  organization: Autodotes
+  inventory: Ansible-Terraform Inventory
+  playbook: create_web_demo/ansible/tf_ops.yml
+  execution_environment: ee-cloud
+  credentials:
+    - Azure RM Service Principal
+    - Terraform Backend Azure Storage Credential
+  ask_tags_on_launch: true
+  survey_spec:
+    name: job template survey
+    description: SSH cred for bootstrapping VM
+    spec:
+    - question_name: SSH Public Key
+      question_description: SSH public key which will enable configuration after provisioning
+      max: 1024
+      min: 0
+      required: true
+      type: password
+      variable: az_ssh_pubkey
+- name: Terraform // Web Demo Configure
+  description: Configure webservers provisioned by Terraform
+  labels:
+    - Demo
+  project: Terraform Mgmt
+  organization: Autodotes
+  inventory: Ansible-Terraform Inventory
+  playbook: create_web_demo/ansible/configure_web.yml
+  execution_environment: ee-default
+  credentials:
+    - AAP (id_rsa)
+```
+
+```yaml
+# workflow_job_templates.yml
+---
+controller_workflows:
+- name: Terraform // Deploy and Configure Workflow
+  organization: Autodotes
+  survey_enabled: true
+  survey_spec:
+    name: workflow survey
+    description: SSH public key passthrough
+    spec:
+    - question_name: SSH Public Key
+      question_description: SSH public key which will enable configuration after provisioning
+      max: 1024
+      min: 0
+      required: true
+      type: password
+      variable: az_ssh_pubkey
+  workflow_nodes:
+  - identifier: Sync Project
+    related:
+      success_nodes:
+      - identifier: Terraform Create
+    unified_job_template:
+      name: Terraform Mgmt
+      organization:
+        name: Autodotes
+        type: organization
+      type: project
+  - identifier: Sync Terraform Inventory
+    related:
+      success_nodes:
+      - identifier: Terraform Create
+    unified_job_template:
+      inventory:
+        name: Ansible-Terraform Inventory
+        organization:
+          name: Autodotes
+          type: organization
+        type: inventory
+      name: openenv-jmdmt
+      type: inventory_source
+  - identifier: Terraform Create
+    all_parents_must_converge: true
+    related:
+      failure_nodes:
+      - identifier: Terraform Destroy
+      success_nodes:
+      - identifier: Configure Web Servers
+    unified_job_template:
+      name: Terraform // Web Demo Deploy
+      organization:
+        name: Autodotes
+        type: organization
+      type: job_template
+  - identifier: Configure Web Servers
+    related:
+      failure_nodes:
+      - identifier: Terraform Destroy
+    unified_job_template:
+      name: Terraform // Web Demo Configure
+      organization:
+        name: Autodotes
+        type: organization
+      type: job_template
+  - identifier: Terraform Destroy
+    job_tags: remove
+    unified_job_template:
+      name: Terraform // Web Demo Deploy
+      organization:
+        name: Autodotes
+        type: organization
+      type: job_template
+
 ```
 
 ## Lessons Learned
