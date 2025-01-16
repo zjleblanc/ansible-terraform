@@ -40,7 +40,7 @@ Playbooks included support executing Terraform operations via Ansible and config
 
 To tie everything together in an enterprise-grade workflow, you will need to create a few resources in Ansible Automation Platform. Below is a list of the resources I created and relationships between them. The configuration results in a workflow pictured immediately below:
 
-![Terraform Create Web Demo Workflow in Ansible Automation Platform](../.attachments/tf_create_web_demo_aap_workflow.png)
+![Terraform Create Web Demo Workflow in Ansible Automation Platform](../.attachments/az_create_web_demo_aap_workflow.png)
 
 ```yaml
 # projects.yml
@@ -216,6 +216,12 @@ controller_workflows:
       type: job_template
 
 ```
+
+## The Outcome
+
+The Ansible configuration playbook will template a landing page based on host variables for the respective Azure VM. Below is an example view from one of my runs:
+
+![Terraform Create Web Demo Site](../.attachments/az_create_web_demo_site.png)
 
 ## Lessons Learned
 
