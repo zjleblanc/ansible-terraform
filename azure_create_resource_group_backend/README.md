@@ -29,3 +29,5 @@ access_key           = "<secret>"
 ```
 
 The access_key can be obtained in the Azure Portal. Refer to the MSFT documentation found [here](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal#view-account-access-keys) for viewing account access keys.
+
+![Find Azure Storage Account Key](../.attachments/az_storage_key.png)
