@@ -170,10 +170,22 @@ controller_workflows:
         name: Autodotes
         type: organization
       type: project
+  - identifier: Terraform Create
+    related:
+      failure_nodes:
+      - identifier: Terraform Destroy
+      success_nodes:
+      - identifier: Sync Terraform Inventory
+    unified_job_template:
+      name: Terraform // Web Demo Deploy
+      organization:
+        name: Autodotes
+        type: organization
+      type: job_template
   - identifier: Sync Terraform Inventory
     related:
       success_nodes:
-      - identifier: Terraform Create
+      - identifier: Configure Web Servers
     unified_job_template:
       inventory:
         name: Ansible-Terraform Inventory
@@ -183,19 +195,6 @@ controller_workflows:
         type: inventory
       name: openenv-jmdmt
       type: inventory_source
-  - identifier: Terraform Create
-    all_parents_must_converge: true
-    related:
-      failure_nodes:
-      - identifier: Terraform Destroy
-      success_nodes:
-      - identifier: Configure Web Servers
-    unified_job_template:
-      name: Terraform // Web Demo Deploy
-      organization:
-        name: Autodotes
-        type: organization
-      type: job_template
   - identifier: Configure Web Servers
     related:
       failure_nodes:
@@ -214,7 +213,6 @@ controller_workflows:
         name: Autodotes
         type: organization
       type: job_template
-
 ```
 
 ## The Outcome
