@@ -85,7 +85,7 @@ controller_credentials:
   credential_type: Terraform backend configuration
   inputs:
     configuration: |
-      resource_group_name  = "openenv-jmdmt"
+      resource_group_name  = "openenv-szvs7"
       storage_account_name = "zjltfstatemgmtsa"
       container_name       = "tfstate"
       access_key           = "{{ controller_credential_az_tf_backend_key  }}"
@@ -193,7 +193,7 @@ controller_workflows:
           name: Autodotes
           type: organization
         type: inventory
-      name: openenv-jmdmt
+      name: openenv-szvs7
       type: inventory_source
   - identifier: Configure Web Servers
     related:

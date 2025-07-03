@@ -3,7 +3,7 @@
 # variable "az_tenant" {}
 # variable "az_subscription" {}
 
-variable "az_resource_group" { default = "openenv-jmdmt" }
+variable "az_resource_group" { default = "openenv-szvs7" }
 variable "az_resource_group_loc" { default = "eastus" }
 variable "az_storage_account" { default = "zjltfstatemgmtsa" }
 variable "az_storage_account_container" { default = "tfstate" }
