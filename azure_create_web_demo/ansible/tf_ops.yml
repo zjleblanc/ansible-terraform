@@ -28,6 +28,7 @@
           - "{{ backend_conf }}"
         variables:
           web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
+          web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
 
     - name: Terraform destroy | create_web_demo
       tags: [never, remove]
@@ -41,3 +42,4 @@
           - "{{ backend_conf }}"
         variables:
           web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
+          web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"

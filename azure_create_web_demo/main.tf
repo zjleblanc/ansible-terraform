@@ -108,7 +108,7 @@ resource "azurerm_linux_virtual_machine" "web_demo" {
   location              = azurerm_resource_group.web_demo.location
   resource_group_name   = azurerm_resource_group.web_demo.name
   network_interface_ids = [azurerm_network_interface.web_demo[count.index].id]
-  size                  = "Standard_DS1_v2"
+  size                  = var.web_vm_size
   tags = var.web_tags_base
 
   source_image_reference {

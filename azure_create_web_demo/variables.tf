@@ -12,6 +12,7 @@ variable "web_tags_base" {
 # Web demo vars
 variable "web_nic_name" { default = "web-demo-nic" }
 variable "web_vm_name" { default = "web-demo-vm" }
+variable "web_vm_size" { default = "Standard_DS1_v2" }
 variable "web_vnet_name" { default = "web-demo-vnet" }
 variable "web_subnet_name" { default = "web-demo-subnet" }
 variable "web_nsg_name" { default = "web-demo-nsg" }
