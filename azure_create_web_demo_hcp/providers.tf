@@ -2,6 +2,9 @@
 terraform {
   cloud {
     # sourced from custom Credential Type for flexibility
+    workspaces {
+      name = "azure-web-demo-dev"
+    }
   }
 
   required_providers {
