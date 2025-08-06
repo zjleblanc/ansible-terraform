@@ -9,10 +9,10 @@
     tf_workspace: "{{ lookup('ansible.builtin.env', 'TF_WORKSPACE') | default(false) }}"
 
   tasks:
-    # - name: Assert workspace provided
-    #   ansible.builtin.assert:
-    #     that: tf_workspace
-    #     fail_msg: "ansible var tf_workspace or env var TF_WORKSPACE must be provided"
+    - name: Assert workspace provided
+      ansible.builtin.assert:
+        that: tf_workspace
+        fail_msg: "ansible var tf_workspace or env var TF_WORKSPACE must be provided"
 
     - name: Terraform apply | create_web_demo
       cloud.terraform.terraform:
