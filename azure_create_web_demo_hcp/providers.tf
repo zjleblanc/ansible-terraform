@@ -1,12 +1,7 @@
 # Configure the Azure provider
 terraform {
   cloud {
-    # organization = "zleblanc" # Source from Credential for flexibility
-    # hostname = "app.terraform.io" # Source from Credential for flexibility
-
-    workspaces {
-      name = "ansible-tf-demos"
-    }
+    # sourced from custom Credential Type for flexibility
   }
 
   required_providers {
