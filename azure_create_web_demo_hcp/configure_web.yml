@@ -1,0 +1,38 @@
+---
+- name: Configure web server
+  hosts: tag_demo_web
+  become: true
+
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Install httpd
+      ansible.builtin.package:
+        name: httpd
+        state: present
+
+    - name: Start and enable httpd service
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+
+    - name: Allow http traffic
+      ansible.posix.firewalld:
+        port: 80/tcp
+        permanent: true
+        immediate: true
+        state: enabled
+        zone: public
+
+    - name: Create a custom index.html file
+      vars:
+        subtitle: "running on azure vm {{ computer_name }} @ {{ public_ipv4_address[0] }}"
+      ansible.builtin.template:
+        dest: /var/www/html/index.html
+        src: index.html.j2
+
+    - name: Check out the site
+      ansible.builtin.debug:
+        msg: "Go to http://{{ public_ipv4_address[0] }}"
