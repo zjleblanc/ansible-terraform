@@ -3,6 +3,8 @@
 .cache
 **/.DS_Store
 
+azure_create_web_demo_hcp/.terraform*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
