@@ -6,13 +6,20 @@
 
   vars:
     tf_project_dir: "{{ playbook_dir | dirname }}"
+    tf_workspace: "{{ lookup('ansible.builtin.env', 'TF_WORKSPACE') | default(false) }}"
 
   tasks:
+    - name: Assert workspace provided
+      ansible.builtin.assert:
+        that: tf_workspace
+        fail_msg: "ansible var tf_workspace or env var TF_WORKSPACE must be provided"
+
     - name: Terraform apply | create_web_demo
       cloud.terraform.terraform:
         project_path: "{{ tf_project_dir }}"
         state: present
         force_init: true
+        workspace: "{{ tf_workspace }}"
         variables:
           web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
           web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
@@ -23,6 +30,7 @@
         project_path: "{{ tf_project_dir }}"
         state: absent
         force_init: true
+        workspace: "{{ tf_workspace }}"
         variables:
           web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
           web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
