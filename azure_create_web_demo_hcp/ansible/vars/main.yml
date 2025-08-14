@@ -5,17 +5,17 @@ info_list_kvpairs:
   - key: ansible host
     value: "{{ ansible_host }}"
   - key: mac address
-    value: "{{ mac_address[0] }}"
+    value: "{{ ansible_default_ipv4['macaddress'] }}"
   - key: public ip addresses
-    value: "{{ public_ipv4_address | default([]) | join(',') }}"
+    value: "{{ public_ip_addresses | default([]) | join(',') }}"
   - key: private ip addresses
-    value: "{{ private_ipv4_addresses | default([]) | join(',') }}"
+    value: "{{ private_ip_addresses | default([]) | join(',') }}"
   - key: image
-    value: "{{ image['offer'] }} {{ image['sku'] }}:{{ image['version'] }}"
+    value: "{{ source_image_reference['offer'] }} {{ source_image_reference['sku'] }}:{{ source_image_reference['version'] }}"
   - key: virtual machine size
-    value: "{{ virtual_machine_size }}"
+    value: "{{ size }}"
   - key: resource group
-    value: "{{ resource_group }}"
+    value: "{{ resource_group_name }}"
   - key: azure region
     value: "{{ location }}"
   - key: tags
