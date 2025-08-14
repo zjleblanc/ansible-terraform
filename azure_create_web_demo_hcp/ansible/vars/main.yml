@@ -19,5 +19,5 @@ info_list_kvpairs:
   - key: azure region
     value: "{{ location }}"
   - key: tags
-    value: "{{ tags | default([]) | join(',') }}"
+    value: "{{ tags | default({}) | dict2items }}"
 ...
