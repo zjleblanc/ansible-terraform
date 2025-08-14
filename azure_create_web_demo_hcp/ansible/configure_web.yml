@@ -28,11 +28,11 @@
 
     - name: Create a custom index.html file
       vars:
-        subtitle: "running on azure vm {{ computer_name }} @ {{ public_ipv4_address[0] }}"
+        subtitle: "running on azure vm {{ computer_name }} @ {{ public_ip_address }}"
       ansible.builtin.template:
         dest: /var/www/html/index.html
         src: index.html.j2
 
     - name: Check out the site
       ansible.builtin.debug:
-        msg: "Go to http://{{ public_ipv4_address[0] }}"
+        msg: "Go to http://{{ public_ip_address }}"

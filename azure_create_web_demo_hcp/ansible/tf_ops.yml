@@ -15,8 +15,6 @@
         fail_msg: "ansible var tf_workspace or env var TF_WORKSPACE must be provided"
 
     - name: Terraform apply | create_web_demo
-      environment:
-        TF_RUN_MESSAGE: "Build triggered via AAP - Job {{ awx_job_id | default('unk') }}"
       cloud.terraform.terraform:
         project_path: "{{ tf_project_dir }}"
         state: present
@@ -28,8 +26,6 @@
 
     - name: Terraform destroy | create_web_demo
       tags: [never, remove]
-      environment:
-        TF_RUN_MESSAGE: "Destroy triggered via AAP - Job {{ awx_job_id | default('unk') }}"
       cloud.terraform.terraform:
         project_path: "{{ tf_project_dir }}"
         state: absent
