@@ -11,7 +11,7 @@ info_list_kvpairs:
   - key: private ip addresses
     value: "{{ private_ip_addresses | default([]) | join(',') }}"
   - key: image
-    value: "{{ source_image_reference['offer'] }} {{ source_image_reference['sku'] }}:{{ source_image_reference['version'] }}"
+    value: "{{ source_image_reference[0]['offer'] }} {{ source_image_reference[0]['sku'] }}:{{ source_image_reference[0]['version'] }}"
   - key: virtual machine size
     value: "{{ size }}"
   - key: resource group
