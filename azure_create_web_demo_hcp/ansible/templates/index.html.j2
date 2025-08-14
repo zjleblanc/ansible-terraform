@@ -141,11 +141,10 @@
                 </li>
                 {% elif tags | length > 0 %}
                 <li class="list-group-item d-flex justify-content-between align-items-start">
-                  {% for tag in kvp['value'] %}
-                  <span class="badge rounded-pill bg-primary">{{ tag['key'] }}:{{ tag['value'] }}</span>
-                  {% endfor %}
-                  <div class="break"></div>
                   <div class="ms-2 me-auto">
+                    {% for tag in kvp['value'] %}
+                    <span class="badge rounded-pill bg-primary">{{ tag['key'] }}:{{ tag['value'] }}</span>
+                    {% endfor %}
                     {{ kvp['key'] }}
                   </div>
                 </li>
