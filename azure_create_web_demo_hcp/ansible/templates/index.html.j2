@@ -18,6 +18,7 @@
             .wrapper { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
             .wrapper .list-vm-info { max-width: 100vw; min-width: 50vw; }
             .badge.rounded-pill { margin-right: 8px; }
+            .break { flex-basis: 100%; height: 0; }
         </style>
     </head>
     <body>
@@ -143,7 +144,7 @@
                   {% for tag in kvp['value'] %}
                   <span class="badge rounded-pill bg-primary">{{ tag['key'] }}:{{ tag['value'] }}</span>
                   {% endfor %}
-                  <br>
+                  <div class="break"></div>
                   <div class="ms-2 me-auto">
                     {{ kvp['key'] }}
                   </div>
