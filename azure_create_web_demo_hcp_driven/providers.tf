@@ -11,7 +11,7 @@ terraform {
     }
     aap = {
       source  = "ansible/aap"
-      version = "~> 0.4"
+      version = "=1.4.0"
     }
   }
 }
