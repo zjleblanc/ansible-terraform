@@ -1,6 +1,6 @@
 ---
 - name: Configure web server
-  hosts: "{{ _hosts | ansible_limit | default(omit) }}"
+  hosts: "{{ _hosts | default(omit) }}"
   become: true
 
   vars_files:

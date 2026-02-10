@@ -204,6 +204,7 @@ data "aap_job_template" "jt" {
 # "Prompt on launch" for Inventory so this inventory_id is used.
 resource "aap_job" "job" {
   job_template_id  = data.aap_job_template.jt.id
+  inventory_id = aap_inventory.inventory.id
   extra_vars = jsonencode({
     _hosts = aap_group.inventory_group.name
   })
