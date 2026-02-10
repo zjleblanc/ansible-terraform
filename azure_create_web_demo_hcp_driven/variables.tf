@@ -53,7 +53,6 @@ variable "aap_organization_name" {
 variable "aap_inventory_name" {
   type        = string
   description = "Name of the AAP inventory to place the web demo hosts"
-  default     = "Ansible-HCP Inventory"
 }
 variable "aap_job_template_name" {
   type        = string
