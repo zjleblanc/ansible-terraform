@@ -179,7 +179,7 @@ resource "aap_group" "inventory_group" {
 
 resource "aap_host" "web_hosts" {
   count        = 2
-  inventory_id = aap_inventory.web_demo.id
+  inventory_id = aap_inventory.inventory.id
   name         = azurerm_linux_virtual_machine.web_demo[count.index].name
   groups       = [aap_group.inventory_group.id]
   variables = jsonencode({
@@ -188,7 +188,7 @@ resource "aap_host" "web_hosts" {
     public_ip_address  = azurerm_public_ip.web_demo[count.index].ip_address
   })
 
-  depends_on = [aap_inventory.web_demo,aap_group.web_demo]
+  depends_on = [aap_inventory.inventory,aap_group.inventory_group]
 }
 
 # -----------------------------------------------------------------------------
