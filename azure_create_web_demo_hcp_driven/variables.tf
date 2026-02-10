@@ -38,7 +38,7 @@ variable "web_demo_ssh_pubkey" {}
 # -----------------------------------------------------------------------------
 variable "aap_host" {
   type        = string
-  description = "AAP controller URL (e.g. https://aap.example.com)"
+  description = "https://aap.example.com"
 }
 variable "aap_token" {
   type        = string
@@ -52,12 +52,13 @@ variable "aap_organization_name" {
 }
 variable "aap_inventory_name" {
   type        = string
-  default     = "Ansible-Terraform Inventory"
   description = "Name of the AAP inventory to place the web demo hosts"
+  default     = "Ansible-HCP Inventory"
 }
 variable "aap_job_template_name" {
   type        = string
-  description = "Name of the AAP Job Template that runs the configure_web playbook"
+  description = "Name of the AAP Job Template that runs the downstream playbook"
+  default     = "Terraform // HCP-Driven // Web Demo Configure"
 }
 variable "aap_insecure_skip_verify" {
   type        = bool
