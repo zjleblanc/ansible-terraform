@@ -8,10 +8,10 @@ info_list_kvpairs:
     value: "{{ ansible_fqdn }}"
   - key: mac address
     value: "{{ ansible_default_ipv4['macaddress'] }}"
-  - key: public ip addresses
-    value: "{{ public_ip_addresses | default([]) | join(',') }}"
-  - key: private ip addresses
-    value: "{{ private_ip_addresses | default([]) | join(',') }}"
+  - key: ipv4 addresses
+    value: "{{ ansible_all_ipv4_addresses | default([]) | join(',') }}"
+  - key: ipv6 addresses
+    value: "{{ ansible_all_ipv6_addresses | default([]) | join(',') }}"
   - key: virtual machine size
     value: "{{ ansible_processor_vcpus }}vCPUs, {{ ansible_memtotal_mb }}MB RAM"
 ...

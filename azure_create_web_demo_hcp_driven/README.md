@@ -41,24 +41,22 @@ No `tf_ops.yml` or workflow that runs Terraform from Ansible; Terraform is the s
 | Variable | Description |
 |----------|-------------|
 | `aap_host` | AAP controller URL (e.g. `https://aap.example.com`) |
-| `aap_username` | API user |
-| `aap_password` | API password or token (sensitive) |
-| `aap_organization_id` | Numeric organization ID for the new inventory |
+| `aap_token` | API user |
 | `aap_organization_name` | Organization name for Job Template lookup (e.g. `Default`) |
-| `aap_job_template_configure_web` | **Name** of the Job Template that runs the configure_web playbook |
+| `aap_job_template_name` | **Name** of the Job Template that runs the configure_web playbook |
 | `aap_inventory_name` | (Optional) Name for the Terraform-created inventory. Default: `Terraform Web Demo Inventory` |
 | `aap_insecure_skip_verify` | (Optional) Skip TLS verification. Default: `false` |
 | `aap_timeout` | (Optional) API timeout in seconds. Default: `5` |
 
 ## Flow
 
-1. `terraform apply`  
+1. `terraform apply`
    - Creates resource group, vnet, subnet, NSG, public IPs, NICs, SSH key, 2 RHEL VMs, managed disks, and attachments.
 2. Terraform then creates AAP resources:
    - **Inventory** (name from `aap_inventory_name`).
    - **Group** `tag_demo_web` (matches `hosts: tag_demo_web` in the playbook).
    - **Hosts** (one per VM), with variables: `ansible_host`, `computer_name`, `public_ip_address`.
-3. Terraform looks up the Job Template by **name** and **organization**, then launches a **job** with the new inventory.  
+3. Terraform looks up the Job Template by **name** and **organization**, then launches a **job** with the new inventory.
    That job runs the configure_web playbook against the new hosts.
 
 ## AAP Job Template requirements
