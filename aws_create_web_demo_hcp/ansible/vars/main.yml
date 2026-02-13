@@ -1,0 +1,17 @@
+---
+info_list_kvpairs:
+  - key: instance name
+    value: "{{ ansible_hostname }}"
+  - key: ansible host
+    value: "{{ ansible_host }}"
+  - key: fqdn
+    value: "{{ ansible_fqdn }}"
+  - key: mac address
+    value: "{{ ansible_default_ipv4['macaddress'] }}"
+  - key: ipv4 addresses
+    value: "{{ ansible_all_ipv4_addresses | default([]) | join(',') }}"
+  - key: ipv6 addresses
+    value: "{{ ansible_all_ipv6_addresses | default([]) | join(',') }}"
+  - key: instance info
+    value: "{{ ansible_processor_vcpus }}vCPUs, {{ ansible_memtotal_mb }}MB RAM"
+...

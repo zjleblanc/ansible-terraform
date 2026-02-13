@@ -1,0 +1,38 @@
+---
+- name: Terraform operations
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  vars:
+    tf_project_dir: "{{ playbook_dir | dirname }}"
+    tf_workspace: "{{ lookup('ansible.builtin.env', 'TF_WORKSPACE') | default(false) }}"
+
+  tasks:
+    - name: Assert workspace provided
+      ansible.builtin.assert:
+        that: tf_workspace
+        fail_msg: "ansible var tf_workspace or env var TF_WORKSPACE must be provided (e.g. aws-web-demo-dev)"
+
+    - name: Terraform apply | create_web_demo
+      cloud.terraform.terraform:
+        project_path: "{{ tf_project_dir }}"
+        state: present
+        force_init: true
+        workspace: "{{ tf_workspace }}"
+        variables:
+          web_demo_ssh_pubkey: "{{ aws_ssh_pubkey }}"
+          aws_region: "{{ aws_region | default('us-east-1') }}"
+          web_instance_type: "{{ aws_web_instance_type | default('t3.small') }}"
+
+    - name: Terraform destroy | create_web_demo
+      tags: [never, remove]
+      cloud.terraform.terraform:
+        project_path: "{{ tf_project_dir }}"
+        state: absent
+        force_init: true
+        workspace: "{{ tf_workspace }}"
+        variables:
+          web_demo_ssh_pubkey: "{{ aws_ssh_pubkey }}"
+          aws_region: "{{ aws_region | default('us-east-1') }}"
+          web_instance_type: "{{ aws_web_instance_type | default('t3.small') }}"
