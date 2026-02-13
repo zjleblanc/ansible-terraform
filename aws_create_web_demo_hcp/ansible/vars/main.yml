@@ -1,17 +1,23 @@
 ---
 info_list_kvpairs:
-  - key: instance name
-    value: "{{ ansible_hostname }}"
+  - key: virtual machine name
+    value: "{{ computer_name }}"
   - key: ansible host
     value: "{{ ansible_host }}"
-  - key: fqdn
-    value: "{{ ansible_fqdn }}"
   - key: mac address
     value: "{{ ansible_default_ipv4['macaddress'] }}"
-  - key: ipv4 addresses
-    value: "{{ ansible_all_ipv4_addresses | default([]) | join(',') }}"
-  - key: ipv6 addresses
-    value: "{{ ansible_all_ipv6_addresses | default([]) | join(',') }}"
-  - key: instance info
-    value: "{{ ansible_processor_vcpus }}vCPUs, {{ ansible_memtotal_mb }}MB RAM"
+  - key: public ip addresses
+    value: "{{ public_ip_addresses | default([]) | join(',') }}"
+  - key: private ip addresses
+    value: "{{ private_ip_addresses | default([]) | join(',') }}"
+  - key: image
+    value: "{{ source_image_reference[0]['offer'] }} {{ source_image_reference[0]['sku'] }}:{{ source_image_reference[0]['version'] }}"
+  - key: virtual machine size
+    value: "{{ size }}"
+  - key: resource group
+    value: "{{ resource_group_name }}"
+  - key: azure region
+    value: "{{ location }}"
+  - key: tags
+    value: "{{ tags | default({}) | dict2items }}"
 ...
