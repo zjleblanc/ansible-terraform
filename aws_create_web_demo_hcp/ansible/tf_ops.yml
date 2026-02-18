@@ -21,9 +21,9 @@
         force_init: true
         workspace: "{{ tf_workspace }}"
         variables:
-          web_demo_ssh_pubkey: "{{ aws_ssh_pubkey }}"
           aws_region: "{{ aws_region | default('us-east-1') }}"
-          web_instance_type: "{{ aws_web_instance_type | default('t3.small') }}"
+          web_demo_ssh_pubkey: "{{ aws_ssh_pubkey }}"
+          web_instance_type: "{{ aws_ec2_instance_type | default('t3.small') }}"
 
     - name: Terraform destroy | create_web_demo
       tags: [never, remove]
@@ -33,6 +33,6 @@
         force_init: true
         workspace: "{{ tf_workspace }}"
         variables:
-          web_demo_ssh_pubkey: "{{ aws_ssh_pubkey }}"
           aws_region: "{{ aws_region | default('us-east-1') }}"
-          web_instance_type: "{{ aws_web_instance_type | default('t3.small') }}"
+          web_demo_ssh_pubkey: "{{ aws_ssh_pubkey }}"
+          web_instance_type: "{{ aws_ec2_instance_type | default('t3.small') }}"

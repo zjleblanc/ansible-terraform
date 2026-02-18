@@ -83,7 +83,7 @@ Required variables for `tf_ops.yml`:
 - `aws_secret_access_key` – AWS secret key
 - `aws_ssh_pubkey` – SSH public key contents (passed to Terraform as `web_demo_ssh_pubkey`)
 
-Optional: `aws_region` (default `us-east-1`), `aws_web_instance_type` (default `t3.small`). Workspace can also be set via env `TF_WORKSPACE`.
+Optional: `aws_region` (default `us-east-1`), `aws_ec2_instance_type` (default `t3.small`). Workspace can also be set via env `TF_WORKSPACE`.
 
 To destroy: run the playbook with tag `remove`:  
 `ansible-playbook tf_ops.yml --tags remove -e "..."`
