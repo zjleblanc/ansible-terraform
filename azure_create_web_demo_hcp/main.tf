@@ -1,3 +1,5 @@
+data "azurerm_client_config" "current" {}
+
 resource "azurerm_resource_group" "web_demo" {
   name     = var.az_resource_group
   location = var.az_region
