@@ -40,6 +40,7 @@
     - name: Set stats for workflow
       when: sc_task_created is defined and r_tf_apply is defined
       ansible.builtin.set_stats:
+        aggregate: false
         data:
           update_sc_task_sys_id: "{{ sc_task_created.sys_id }}"
           update_sc_task_data:
