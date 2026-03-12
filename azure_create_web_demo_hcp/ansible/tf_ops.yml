@@ -43,9 +43,10 @@
         data:
           update_sc_task_sys_id: "{{ sc_task_created.sys_id }}"
           update_sc_task_data:
-            work_notes: >-
-              [code]<pre>
-              {{ r_tf_apply['outputs']['azure_web_demo_vm_details']['value'] | replace('\n', '<br>') | to_nice_json(indent=2) }}
-              </pre>[/code]
+            work_notes:  "{{ r_tf_apply['outputs']['azure_web_demo_vm_details']['value'] | to_nice_json(indent=2) | codify }}"
             close_notes: Terraform deployment completed
             state: 3 # Closed Complete
+          create_sctask_data:
+            request_item: "{{ create_sctask_data.request_item }}"
+            short_description: Ansible initiating configuration of web servers in Azure
+            assignment_group: "{{ create_sctask_data.assignment_group }}"
