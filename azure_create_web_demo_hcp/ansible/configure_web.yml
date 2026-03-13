@@ -36,15 +36,27 @@
     - name: Set stats for task update
       delegate_to: localhost
       when: sc_task_created is defined
-      ansible.builtin.set_stats:
-        aggregate: false
-        data:
-          update_sc_task_sys_id: "{{ sc_task_created[inventory_hostname]['sys_id'] }}"
-          update_sc_task_data:
-            work_notes:  >-
-              [code]
-              <p>Web server deployed on <strong>{{ host }}</strong><br>
-              <a href="http://{{ hostvars[host]['public_ip_address'] }}">View Site</a></p>
-              [/code]
-            close_notes: Web server configuration complete
-            state: 3 # Closed complete
+      block:
+        - name: Prep stats for task update
+          ansible.builtin.set_fact:
+            update_sc_task_sys_id: "{{ sc_task_created[inventory_hostname]['sys_id'] }}"
+            update_sc_task_data:
+              work_notes:  >-
+                [code]
+                <p>Web server deployed on <strong>{{ host }}</strong><br>
+                <a href="http://{{ hostvars[host]['public_ip_address'] }}">View Site</a></p>
+                [/code]
+              close_notes: Web server configuration complete
+              state: 3 # Closed complete
+
+        - name: Set stats for task update
+          ansible.builtin.set_stats:
+            data: >
+              {
+                "update_sc_task_sys_id": {
+                  "{{ inventory_hostname }}": "{{ update_sc_task_sys_id }}"
+                },
+                "update_sc_task_data_overrides": {
+                  "{{ inventory_hostname }}": {{ update_sc_task_data }}
+                }
+              }
