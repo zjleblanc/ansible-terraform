@@ -43,8 +43,8 @@
             update_sc_task_data:
               work_notes:  >-
                 [code]
-                <p>Web server deployed on <strong>{{ host }}</strong><br>
-                <a href="http://{{ hostvars[host]['public_ip_address'] }}">View Site</a></p>
+                <p>Web server deployed on <strong>{{ inventory_hostname }}</strong><br>
+                <a href="http://{{ public_ip_address }}">View Site</a></p>
                 [/code]
               close_notes: Web server configuration complete
               state: 3 # Closed complete
