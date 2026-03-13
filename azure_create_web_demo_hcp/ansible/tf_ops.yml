@@ -46,18 +46,6 @@
           close_notes: Terraform deployment completed
           state: 3 # Closed complete
 
-    - name: Set stats for task update
-      ansible.builtin.set_stats:
-        data: >
-          {
-            "update_sc_task_sys_id": {
-              "{{ inventory_hostname }}": "{{ update_sc_task_sys_id }}"
-            },
-            "update_sc_task_data_overrides": {
-              "{{ inventory_hostname }}": {{ update_sc_task_data }}
-            }
-          }
-
     - name: Set stats for web server task create
       when: r_tf_apply is defined
       ansible.builtin.set_stats:
@@ -65,7 +53,8 @@
           {
             "sc_task_created": {
               {% for vm in r_tf_apply['outputs']['azure_web_demo_vm_details']['value'] %}
-              "{{ vm.name }}": {"create_sc_task_data_overrides": "Ansible initiating configuration of {{ inventory_hostname }}" }
+              "{{ vm.name }}": {"create_sc_task_data_overrides": "Ansible initiating configuration of {{ inventory_hostname }}"}
+              {% if not loop.last %},{% endif %}
               {% endfor %}
             }
           }
