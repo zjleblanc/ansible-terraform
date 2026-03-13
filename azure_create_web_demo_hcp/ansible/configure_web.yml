@@ -34,18 +34,17 @@
         src: index.html.j2
 
     - name: Set stats for task update
-      run_once: true
       delegate_to: localhost
       when: sc_task_created is defined
       ansible.builtin.set_stats:
         aggregate: false
         data:
-          update_sc_task_sys_id: "{{ sc_task_created.sys_id }}"
+          update_sc_task_sys_id: "{{ sc_task_created[inventory_hostname]['sys_id'] }}"
           update_sc_task_data:
             work_notes:  >-
-              [code]{% for host in ansible_play_hosts %}
+              [code]
               <p>Web server deployed on <strong>{{ host }}</strong><br>
               <a href="http://{{ hostvars[host]['public_ip_address'] }}">View Site</a></p>
-              {% endfor %}[/code]
-            close_notes: Web server(s) configuration complete
+              [/code]
+            close_notes: Web server configuration complete
             state: 3 # Closed complete
