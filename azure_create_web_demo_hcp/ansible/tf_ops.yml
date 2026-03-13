@@ -37,7 +37,7 @@
           web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
           web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
 
-    - name: Set stats for workflow
+    - name: Set stats for task update
       when: sc_task_created is defined and r_tf_apply is defined
       ansible.builtin.set_stats:
         aggregate: false

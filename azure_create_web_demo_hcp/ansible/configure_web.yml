@@ -34,5 +34,21 @@
         src: index.html.j2
 
     - name: Check out the site
-      ansible.builtin.debug:
-        msg: "Go to http://{{ public_ip_address }}"
+      run_once: true
+      ansible.builtin.set_fact:
+        sn_work_notes: >-
+          [code]{% for host in ansible_play_hosts %}
+          <p>Web server deployed on <strong>{{ host }}</strong><br>
+          <a href="http://{{ hostvars[host]['public_ip_addresses'] }}">View Site</a></p>
+          {% endfor %}[/code]
+
+    - name: Set stats for task update
+      when: sc_task_created is defined and r_tf_apply is defined
+      ansible.builtin.set_stats:
+        aggregate: false
+        data:
+          update_sc_task_sys_id: "{{ sc_task_created.sys_id }}"
+          update_sc_task_data:
+            work_notes:  "{{ sn_work_notes }}"
+            close_notes: Web server(s) configuration complete
+            state: 3 # Closed complete
