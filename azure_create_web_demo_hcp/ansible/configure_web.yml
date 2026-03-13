@@ -33,25 +33,19 @@
         dest: /var/www/html/index.html
         src: index.html.j2
 
-    - name: Service Now task integration
+    - name: Set stats for task update
       run_once: true
       delegate_to: localhost
       when: sc_task_created is defined
-      block:
-        - name: Create work note for task update
-          ansible.builtin.set_fact:
-            sn_work_notes: >-
+      ansible.builtin.set_stats:
+        aggregate: false
+        data:
+          update_sc_task_sys_id: "{{ sc_task_created.sys_id }}"
+          update_sc_task_data:
+            work_notes:  >-
               [code]{% for host in ansible_play_hosts %}
               <p>Web server deployed on <strong>{{ host }}</strong><br>
               <a href="http://{{ hostvars[host]['public_ip_address'] }}">View Site</a></p>
               {% endfor %}[/code]
-
-        - name: Set stats for task update
-          ansible.builtin.set_stats:
-            aggregate: false
-            data:
-              update_sc_task_sys_id: "{{ sc_task_created.sys_id }}"
-              update_sc_task_data:
-                work_notes:  "{{ sn_work_notes }}"
-                close_notes: Web server(s) configuration complete
-                state: 3 # Closed complete
+            close_notes: Web server(s) configuration complete
+            state: 3 # Closed complete
