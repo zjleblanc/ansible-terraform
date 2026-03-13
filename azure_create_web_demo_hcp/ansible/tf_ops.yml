@@ -51,9 +51,9 @@
       ansible.builtin.set_stats:
         data: >
           {
-            "sc_task_created": {
+            "create_sc_task_data_overrides": {
               {% for vm in r_tf_apply['outputs']['azure_web_demo_vm_details']['value'] %}
-              "{{ vm.name }}": {"create_sc_task_data_overrides": "Ansible initiating configuration of {{ inventory_hostname }}"}
+              "{{ vm.name }}": {"short_description":"Ansible initiating configuration of {{ vm }}"}
               {% if not loop.last %},{% endif %}
               {% endfor %}
             }
