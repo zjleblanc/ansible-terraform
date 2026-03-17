@@ -7,6 +7,8 @@
   vars:
     tf_project_dir: "{{ playbook_dir | dirname }}"
     tf_workspace: "{{ lookup('ansible.builtin.env', 'TF_WORKSPACE') | default(false) }}"
+    aap_workflow_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/workflow/{{ awx_workflow_job_id | default('-1') }}/output"
+    aap_job_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/playbook/{{ awx_job_id | default('-1') }}/details"
 
   tasks:
     - name: Assert workspace provided
@@ -24,6 +26,9 @@
         variables:
           web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
           web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
+          sc_task: "{{ sc_task_created[inventory_hostname]['number'] | default('N/A')}}"
+          aap_job_url: "{{ aap_job_url }}"
+          aap_workflow_url: "{{ aap_workflow_url }}"
 
     - name: Terraform destroy | create_web_demo
       tags: [never, remove]
@@ -36,13 +41,22 @@
         variables:
           web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
           web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
+          sc_task: "{{ sc_task_created[inventory_hostname]['number'] | default('N/A')}}"
+          aap_job_url: "{{ aap_job_url }}"
 
     - name: Prep stats for task update
       when: sc_task_created is defined and r_tf_apply is defined
       ansible.builtin.set_fact:
         _update_sc_task_sys_id: "{{ sc_task_created[inventory_hostname]['sys_id'] }}"
         _update_sc_task_data:
-          work_notes:  "{{ r_tf_apply['outputs']['azure_web_demo_vm_details']['value'] | to_nice_json(indent=2) | codify }}"
+          work_notes:  >-
+            [code]
+            <p>Ansible Automation Platform Workflow:</p>
+            <a href="{{ aap_workflow_url }}">View Workflow</a>
+            <p>Ansible Automation Platform Job:</p>
+            <a href="{{ aap_job_url }}">View Job</a>
+            [/code]
+            {{ r_tf_apply['outputs']['azure_web_demo_vm_details']['value'] | to_nice_json(indent=2) | codify }}
           close_notes: Terraform deployment completed
           state: 3 # Closed complete
 

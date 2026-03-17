@@ -25,3 +25,16 @@ variable "web_nsg_name" { default = "web-demo-nsg" }
 variable "web_demo_admin_username" { default = "zach" }
 variable "web_demo_ssh_pubkey_name" { default = "web-demo-ssh-pubkey" }
 variable "web_demo_ssh_pubkey" {}
+# Output metadata
+variable "aap_job_url" {
+  type        = string
+  description = "N/A"
+}
+variable "aap_workflow_url" {
+  type        = string
+  description = "N/A"
+}
+variable "sc_task" {
+  type        = string
+  description = "N/A"
+}

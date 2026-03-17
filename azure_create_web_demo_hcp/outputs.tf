@@ -1,5 +1,20 @@
 # CMDB-oriented outputs for the created VMs (e.g. for Ansible inventory or config DB)
 
+output "aap_job_url" {
+  description = "URL of the Ansible Automation Platform job."
+  value = var.aap_job_url
+}
+
+output "aap_workflow_url" {
+  description = "URL of the Ansible Automation Platform workflow."
+  value = var.aap_workflow_url
+}
+
+output "sc_task" {
+  description = "Number of the ServiceNow task."
+  value = var.sc_task
+}
+
 output "azure_web_demo_vm_details" {
   description = "List of VM details suitable for populating a CMDB."
   value = [
