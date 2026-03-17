@@ -43,6 +43,7 @@
           web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
           sc_task: "{{ sc_task_created[inventory_hostname]['number'] | default('N/A')}}"
           aap_job_url: "{{ aap_job_url }}"
+          aap_workflow_url: "{{ aap_workflow_url }}"
 
     - name: Prep stats for task update
       when: sc_task_created is defined and r_tf_apply is defined
