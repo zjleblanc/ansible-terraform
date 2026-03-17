@@ -28,13 +28,13 @@ variable "web_demo_ssh_pubkey" {}
 # Output metadata
 variable "aap_job_url" {
   type        = string
-  description = "N/A"
+  default = "N/A"
 }
 variable "aap_workflow_url" {
   type        = string
-  description = "N/A"
+  default = "N/A"
 }
 variable "sc_task" {
   type        = string
-  description = "N/A"
+  default = "N/A"
 }
