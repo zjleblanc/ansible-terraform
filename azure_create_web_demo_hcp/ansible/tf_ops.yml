@@ -8,7 +8,7 @@
     tf_project_dir: "{{ playbook_dir | dirname }}"
     tf_workspace: "{{ lookup('ansible.builtin.env', 'TF_WORKSPACE') | default(false) }}"
     aap_workflow_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/workflow/{{ awx_workflow_job_id | default('-1') }}/output"
-    aap_job_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/playbook/{{ awx_job_id | default('-1') }}/details"
+    aap_job_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/playbook/{{ awx_job_id | default('-1') }}/output"
 
   tasks:
     - name: Assert workspace provided
