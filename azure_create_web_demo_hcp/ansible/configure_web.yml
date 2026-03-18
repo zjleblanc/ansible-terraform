@@ -75,6 +75,9 @@
   gather_facts: false
   become: false
 
+  vars:
+    aap_workflow_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/workflow/{{ awx_workflow_job_id | default('-1') }}/output"
+
   tasks:
     - name: Prep stats for request item update
       ansible.builtin.set_fact:
