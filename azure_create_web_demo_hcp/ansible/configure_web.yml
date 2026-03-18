@@ -69,3 +69,32 @@
                   "{{ inventory_hostname }}": {{ _update_sc_task_data }}
                 }
               }
+
+- name: Prepare request item update
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Prep stats for request item update
+      ansible.builtin.set_fact:
+        _update_sc_req_item_data:
+          work_notes:  >-
+            [code]
+            <p>Ansible Automation Platform Workflow:</p>
+            <a href="{{ aap_workflow_url }}">View Workflow</a>
+            [/code]
+          close_notes: AAP + Terraform deployment complete
+          state: 3 # Closed complete
+
+    - name: Set stats for request item update
+      ansible.builtin.set_stats:
+        data: >
+          {
+            "update_sc_req_item_sys_id": {
+              "{{ inventory_hostname }}": "{{ request_item_sys_id }}"
+            },
+            "update_sc_req_item_data_overrides": {
+              "{{ inventory_hostname }}": {{ _update_sc_req_item_data }}
+            }
+          }
