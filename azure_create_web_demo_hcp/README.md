@@ -221,6 +221,58 @@ The Ansible configuration playbook will template a landing page based on host va
 
 ![Terraform Create Web Demo Site](../.attachments/az_create_web_demo_site.png)
 
+## Service Now Integration
+
+The playbooks can track progress in ServiceNow using the [ITSM collection](https://galaxy.ansible.com/ibm/ibm_itsm) (or a compatible ServiceNow/ITSM integration). This is optional: all ITSM-related tasks and variables are gated so the playbooks run normally when no ServiceNow context is provided.
+
+### Input variables (from workflow or a prior job)
+
+These are typically provided by a workflow survey or by an earlier job that creates/updates ServiceNow records:
+
+| Variable | Purpose |
+| --- | --- |
+| `sc_task_created` | Dict keyed by host; each value has `number` and `sys_id` of the ServiceNow task to update (e.g. from an ITSM “create task” step). |
+| `request_item_sys_id` | `sys_id` of the parent Request Item (RITM) to update when the full deployment is complete. |
+| `aap_host` | AAP controller hostname (optional; used in work notes links). |
+| `awx_workflow_job_id` | Workflow job ID (optional; used in work notes links). |
+| `awx_job_id` | Playbook job ID (optional; used in work notes links). |
+
+### Terraform variable
+
+| Variable | Purpose |
+| --- | --- |
+| `sc_task` | Task number passed into Terraform from `sc_task_created[inventory_hostname]['number']` (or `N/A`). Exposed in [outputs](./outputs.tf) so the task number is stored with the deployment. |
+
+### Tasks and stats used for tracking
+
+**In [tf_ops.yml](./ansible/tf_ops.yml):**
+
+- **Terraform apply/destroy**  
+  Passes `sc_task` (and AAP URLs) into Terraform so state/outputs reference the ServiceNow task.
+- **After a successful apply** (when `sc_task_created` is defined):
+  - **Prep stats for task update** – Builds payload to update the existing task: work notes (workflow/job links + VM details JSON), `close_notes`, and `state: 3` (Closed complete).
+  - **Set stats for task update** – Exposes `update_sc_task_sys_id` and `update_sc_task_data_overrides` for a downstream job to perform the task update via the ITSM collection.
+  - **Set stats for web server task create** – Exposes `create_sc_task_data_overrides` (one entry per VM) so a downstream job can create a child ServiceNow task per host for the “Configure Web Servers” step (e.g. `short_description`: “Ansible initiating configuration of &lt;vm_name&gt;”).
+
+**In [configure_web.yml](./ansible/configure_web.yml):**
+
+- **Per-host task update** (when `sc_task_created` is defined):  
+  For each configured web host, sets `update_sc_task_sys_id` and `update_sc_task_data_overrides` with work notes (workflow/job/site links), `close_notes`, and `state: 3` so the per-VM task can be closed.
+- **Request item update** (on localhost):  
+  Sets `update_ritm_sys_id` and `update_ritm_data_overrides` with work notes (workflow link), `close_notes`, and `state: 3` so the parent RITM can be closed when AAP + Terraform deployment is complete.
+
+### Stat keys consumed by ITSM update jobs
+
+A workflow or convergence play that uses the ITSM collection should read these stats (set by the playbooks above) and call the appropriate modules to create/update records:
+
+| Stat key | Used to |
+| --- | --- |
+| `update_sc_task_sys_id` | Identify which ServiceNow task (by `sys_id`) to update. |
+| `update_sc_task_data_overrides` | Payload (work_notes, close_notes, state, etc.) for that task update. |
+| `create_sc_task_data_overrides` | Payloads for creating one child task per VM (e.g. for “Configure Web Servers”). |
+| `update_ritm_sys_id` | Identify which Request Item to update. |
+| `update_ritm_data_overrides` | Payload for closing/updating the RITM. |
+
 ## Lessons Learned
 
 Authentication
