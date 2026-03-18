@@ -36,7 +36,7 @@
       community.crypto.openssh_keypair:
         path: /tmp/id_ssh_rsa
         type: rsa
-        bits: 4096
+        size: 4096
 
     - name: Terraform destroy | create_web_demo
       tags: [never, remove]
