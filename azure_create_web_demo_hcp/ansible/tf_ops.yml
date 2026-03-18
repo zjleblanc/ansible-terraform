@@ -30,6 +30,14 @@
           aap_job_url: "{{ aap_job_url }}"
           aap_workflow_url: "{{ aap_workflow_url }}"
 
+    - name: Generate dummy public key
+      tags: [never, remove]
+      register: r_ssh_keypair
+      community.crypto.openssh_keypair:
+        path: /tmp/id_ssh_rsa
+        type: rsa
+        bits: 4096
+
     - name: Terraform destroy | create_web_demo
       tags: [never, remove]
       register: r_tf_destroy
@@ -39,7 +47,7 @@
         force_init: true
         workspace: "{{ tf_workspace }}"
         variables:
-          web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
+          web_demo_ssh_pubkey: "{{ r_ssh_keypair['public_key'] }}"
           web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
           sc_task: "{{ sc_task_created[inventory_hostname]['number'] | default('N/A')}}"
           aap_job_url: "{{ aap_job_url }}"
