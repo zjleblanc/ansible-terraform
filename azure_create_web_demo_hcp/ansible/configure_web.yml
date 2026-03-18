@@ -78,7 +78,7 @@
   tasks:
     - name: Prep stats for request item update
       ansible.builtin.set_fact:
-        _update_sc_req_item_data:
+        _update_ritm_data:
           work_notes:  >-
             [code]
             <p>Ansible Automation Platform Workflow:</p>
@@ -91,10 +91,10 @@
       ansible.builtin.set_stats:
         data: >
           {
-            "update_sc_req_item_sys_id": {
+            "update_ritm_sys_id": {
               "{{ inventory_hostname }}": "{{ request_item_sys_id }}"
             },
-            "update_sc_req_item_data_overrides": {
-              "{{ inventory_hostname }}": {{ _update_sc_req_item_data }}
+            "update_ritm_data_overrides": {
+              "{{ inventory_hostname }}": {{ _update_ritm_data }}
             }
           }
