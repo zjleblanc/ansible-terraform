@@ -71,7 +71,7 @@
               }
 
 - name: Prepare request item update
-  hosts: localhost
+  hosts: "{{ (create_sc_task_data is defined) | ternary('localhost', omit) }}"
   gather_facts: false
   become: false
 
@@ -95,7 +95,7 @@
         data: >
           {
             "update_ritm_sys_id": {
-              "{{ inventory_hostname }}": "{{ request_item_sys_id }}"
+              "{{ inventory_hostname }}": "{{ create_sc_task_data['request_item_sys_id'] }}"
             },
             "update_ritm_data_overrides": {
               "{{ inventory_hostname }}": {{ _update_ritm_data }}
