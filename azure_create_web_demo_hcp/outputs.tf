@@ -22,13 +22,13 @@ output "sn_configuration_items" {
       for k, vm in azurerm_linux_virtual_machine.web_demo : {
         name           = vm.name
         sys_class_name = "cmdb_ci_linux_server"
-        attributes = {
+        other = {
           correlation_id    = vm.id
-          ip_address        = vm.private_ip_address
+          ip_address        = vm.public_ip_address
           location          = vm.location
           cost_center       = lookup(vm.tags, "cost-center", "")
           owned_by          = lookup(vm.tags, "owner", "")
-          short_description = "Managed by Terraform: ${vm.computer_name}"
+          short_description = "Managed by Terraform"
         }
       }
     ],
@@ -37,10 +37,13 @@ output "sn_configuration_items" {
       for k, disk in azurerm_managed_disk.web_demo : {
         name           = disk.name
         sys_class_name = "cmdb_ci_storage_volume"
-        attributes = {
+        other = {
           correlation_id = disk.id
           size_bytes     = disk.disk_size_gb * 1024 * 1024 * 1024
           location       = disk.location
+          cost_center       = lookup(vm.tags, "cost-center", "")
+          owned_by          = lookup(vm.tags, "owner", "")
+          short_description = "Managed by Terraform"
         }
       }
     ],
@@ -49,9 +52,12 @@ output "sn_configuration_items" {
       {
         name           = azurerm_virtual_network.web_demo.name
         sys_class_name = "cmdb_ci_network"
-        attributes = {
+        other = {
           correlation_id = azurerm_virtual_network.web_demo.id
           location       = azurerm_virtual_network.web_demo.location
+          cost_center       = lookup(vm.tags, "cost-center", "")
+          owned_by          = lookup(vm.tags, "owner", "")
+          short_description = "Managed by Terraform"
         }
       }
     ]
