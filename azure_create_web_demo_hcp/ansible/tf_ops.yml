@@ -65,7 +65,6 @@
             <p>Ansible Automation Platform Job:</p>
             <a href="{{ aap_job_url }}">View Job</a>
             [/code]
-            {{ r_tf_apply['outputs']['azure_web_demo_vm_details']['value'] | to_nice_json(indent=2) | codify }}
           close_notes: Terraform deployment completed
           state: 3 # Closed complete
 
@@ -91,5 +90,6 @@
               "{{ vm.name }}": {"short_description":"Ansible initiating configuration of {{ vm.name }}"}
               {% if not loop.last %},{% endif %}
               {% endfor %}
-            }
+            },
+            "create_cis_tf_output": {{ r_tf_apply['root_module']['resources'] }}
           }
