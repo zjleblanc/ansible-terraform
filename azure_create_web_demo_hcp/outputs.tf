@@ -41,8 +41,8 @@ output "sn_configuration_items" {
           correlation_id = disk.id
           size_bytes     = disk.disk_size_gb * 1024 * 1024 * 1024
           location       = disk.location
-          cost_center       = lookup(vm.tags, "cost-center", "")
-          owned_by          = lookup(vm.tags, "owner", "")
+          cost_center       = lookup(disk.tags, "cost-center", "")
+          owned_by          = lookup(disk.tags, "owner", "")
           short_description = "Managed by Terraform"
         }
       }
@@ -55,8 +55,8 @@ output "sn_configuration_items" {
         other = {
           correlation_id = azurerm_virtual_network.web_demo.id
           location       = azurerm_virtual_network.web_demo.location
-          cost_center       = lookup(vm.tags, "cost-center", "")
-          owned_by          = lookup(vm.tags, "owner", "")
+          cost_center       = lookup(azurerm_virtual_network.web_demo.tags, "cost-center", "")
+          owned_by          = lookup(azurerm_virtual_network.web_demo.tags, "owner", "")
           short_description = "Managed by Terraform"
         }
       }
