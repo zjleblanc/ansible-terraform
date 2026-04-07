@@ -24,6 +24,7 @@ output "sn_configuration_items" {
         sys_class_name = "cmdb_ci_linux_server"
         other = {
           correlation_id    = vm.id
+          correlation_display = "aap.terraform.io"
           ip_address        = vm.public_ip_address
           location          = vm.location
           cost_center       = lookup(vm.tags, "cost-center", "")
@@ -39,6 +40,7 @@ output "sn_configuration_items" {
         sys_class_name = "cmdb_ci_storage_volume"
         other = {
           correlation_id = disk.id
+          correlation_display = "aap.terraform.io"
           size_bytes     = disk.disk_size_gb * 1024 * 1024 * 1024
           location       = disk.location
           cost_center       = lookup(disk.tags, "cost-center", "")
@@ -54,6 +56,7 @@ output "sn_configuration_items" {
         sys_class_name = "cmdb_ci_network"
         other = {
           correlation_id = azurerm_virtual_network.web_demo.id
+          correlation_display = "aap.terraform.io"
           location       = azurerm_virtual_network.web_demo.location
           cost_center       = lookup(azurerm_virtual_network.web_demo.tags, "cost-center", "")
           owned_by          = lookup(azurerm_virtual_network.web_demo.tags, "owner", "")
@@ -70,7 +73,9 @@ output "sn_ci_relationships" {
     [
       for attachment in azurerm_virtual_machine_data_disk_attachment.web_demo : {
         parent = attachment.virtual_machine_id
+        parent_type = "cmdb_ci_linux_server"
         child  = attachment.managed_disk_id
+        child_type = "cmdb_ci_storage_volume"
         type   = "Provides storage for::Stored on"
       }
     ],
@@ -80,7 +85,9 @@ output "sn_ci_relationships" {
       for vm in azurerm_linux_virtual_machine.web_demo : [
         for nic_id in vm.network_interface_ids : {
           parent = vm.id
+          parent_type = "cmdb_ci_linux_server"
           child  = nic_id
+          child_type = "cmdb_ci_network_interface"
           type   = "Inbound Connection::Outbound Connection"
         }
       ]
