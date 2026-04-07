@@ -81,15 +81,18 @@
           }
 
     - name: Set stats for web server task create
+      vars:
+        tf_vms_created: "{{ r_tf_apply['outputs']['sn_configuration_items']['value'] | selectattr('sys_class_name', 'equalto', 'cmdb_ci_linux_server') | map(attribute='name') }}"
       when: r_tf_apply is defined
       ansible.builtin.set_stats:
         data: >
           {
             "create_sc_task_data_overrides": {
-              {% for vm in r_tf_apply['outputs']['azure_web_demo_vm_details']['value'] %}
-              "{{ vm.name }}": {"short_description":"Ansible initiating configuration of {{ vm.name }}"}
+              {% for vm in tf_vms_created %}
+              "{{ vm }}": {"short_description":"Ansible initiating configuration of {{ vm }}"}
               {% if not loop.last %},{% endif %}
               {% endfor %}
             },
-            "create_cis_tf_output": {{ r_tf_apply['root_module']['resources'] }}
+            "sn_configuration_items": {{ r_tf_apply['outputs']['sn_configuration_items']['value'] }},
+            "sn_ci_relationships": {{ r_tf_apply['outputs']['sn_ci_relationships']['value'] }}
           }
