@@ -15,39 +15,69 @@ output "sc_task" {
   value = var.sc_task
 }
 
-output "azure_web_demo_vm_details" {
-  description = "List of VM details suitable for populating a CMDB."
-  value = [
-    for i in range(length(azurerm_linux_virtual_machine.web_demo)) : {
-      name                = azurerm_linux_virtual_machine.web_demo[i].name
-      id                  = azurerm_linux_virtual_machine.web_demo[i].id
-      resource_group      = azurerm_resource_group.web_demo.name
-      location            = azurerm_linux_virtual_machine.web_demo[i].location
-      size                = azurerm_linux_virtual_machine.web_demo[i].size
-      computer_name      = azurerm_linux_virtual_machine.web_demo[i].computer_name
-      admin_username     = azurerm_linux_virtual_machine.web_demo[i].admin_username
-      os_type            = "Linux"
-      os_publisher       = azurerm_linux_virtual_machine.web_demo[i].source_image_reference[0].publisher
-      os_offer           = azurerm_linux_virtual_machine.web_demo[i].source_image_reference[0].offer
-      os_sku             = azurerm_linux_virtual_machine.web_demo[i].source_image_reference[0].sku
-      os_version         = azurerm_linux_virtual_machine.web_demo[i].source_image_reference[0].version
-      private_ip_address = azurerm_network_interface.web_demo[i].private_ip_address
-      public_ip_address  = azurerm_public_ip.web_demo[i].ip_address
-      subscription_id    = data.azurerm_client_config.current.subscription_id
-      tenant_id          = data.azurerm_client_config.current.tenant_id
-      network_interface_id = azurerm_network_interface.web_demo[i].id
-      os_disk = {
-        name = azurerm_linux_virtual_machine.web_demo[i].os_disk[0].name
-        size_gb = azurerm_linux_virtual_machine.web_demo[i].os_disk[0].disk_size_gb
-        storage_account_type = azurerm_linux_virtual_machine.web_demo[i].os_disk[0].storage_account_type
+output "sn_configuration_items" {
+  value = concat(
+    # 1. Map Virtual Machines
+    [
+      for k, vm in azurerm_linux_virtual_machine.web_demo : {
+        name           = vm.name
+        sys_class_name = "cmdb_ci_linux_server"
+        attributes = {
+          correlation_id    = vm.id
+          ip_address        = vm.private_ip_address
+          location          = vm.location
+          cost_center       = lookup(vm.tags, "cost-center", "")
+          owned_by          = lookup(vm.tags, "owner", "")
+          short_description = "Managed by Terraform: ${vm.computer_name}"
+        }
       }
-      data_disk = {
-        id       = azurerm_managed_disk.web_demo[i].id
-        name     = azurerm_managed_disk.web_demo[i].name
-        size_gb  = azurerm_managed_disk.web_demo[i].disk_size_gb
-        storage_account_type = azurerm_managed_disk.web_demo[i].storage_account_type
+    ],
+    # 2. Map Managed Disks
+    [
+      for k, disk in azurerm_managed_disk.web_demo : {
+        name           = disk.name
+        sys_class_name = "cmdb_ci_storage_volume"
+        attributes = {
+          correlation_id = disk.id
+          size_bytes     = disk.disk_size_gb * 1024 * 1024 * 1024
+          location       = disk.location
+        }
       }
-      tags = azurerm_linux_virtual_machine.web_demo[i].tags
-    }
-  ]
+    ],
+    # 3. Map Virtual Networks
+    [
+      {
+        name           = azurerm_virtual_network.web_demo.name
+        sys_class_name = "cmdb_ci_network"
+        attributes = {
+          correlation_id = azurerm_virtual_network.web_demo.id
+          location       = azurerm_virtual_network.web_demo.location
+        }
+      }
+    ]
+  )
+}
+
+output "sn_ci_relationships" {
+  value = flatten([
+    # Map Disk to VM Relationships
+    [
+      for attachment in azurerm_virtual_machine_data_disk_attachment.web_demo : {
+        parent = attachment.virtual_machine_id
+        child  = attachment.managed_disk_id
+        type   = "Provides storage for::Stored on"
+      }
+    ],
+
+    # Map NIC to VM Relationships
+    [
+      for vm in azurerm_linux_virtual_machine.web_demo : [
+        for nic_id in vm.network_interface_ids : {
+          parent = vm.id
+          child  = nic_id
+          type   = "Inbound Connection::Outbound Connection"
+        }
+      ]
+    ]
+  ])
 }
