@@ -93,6 +93,6 @@
               {% if not loop.last %},{% endif %}
               {% endfor %}
             },
-            "sn_configuration_items": {{ r_tf_apply['outputs']['sn_configuration_items']['value'] }},
-            "sn_ci_relationships": {{ r_tf_apply['outputs']['sn_ci_relationships']['value'] }}
+            "sn_manage_resources": {{ r_tf_apply['outputs']['sn_configuration_items']['value'] }},
+            "sn_manage_relationships": {{ r_tf_apply['outputs']['sn_ci_relationships']['value'] }}
           }
