@@ -87,7 +87,7 @@ output "sn_ci_relationships" {
           parent = vm.id
           parent_type = "cmdb_ci_linux_server"
           child  = nic_id
-          child_type = "cmdb_ci_network_interface"
+          child_type = "cmdb_ci_network"
           type   = "Inbound Connection::Outbound Connection"
         }
       ]
