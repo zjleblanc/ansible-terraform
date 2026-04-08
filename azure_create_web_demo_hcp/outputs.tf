@@ -68,14 +68,17 @@ output "sn_configuration_items" {
 }
 
 output "sn_ci_relationships" {
+  # type must exist in cmdb_rel_type table
+  # {parent descriptor}::{child descriptor}
+
   value = flatten([
     # Map Disk to VM Relationships
     [
       for attachment in azurerm_virtual_machine_data_disk_attachment.web_demo : {
-        parent = attachment.virtual_machine_id
-        parent_type = "cmdb_ci_linux_server"
-        child  = attachment.managed_disk_id
-        child_type = "cmdb_ci_storage_volume"
+        parent  = attachment.managed_disk_id
+        parent_type = "cmdb_ci_storage_volume"
+        child = attachment.virtual_machine_id
+        child_type = "cmdb_ci_linux_server"
         type   = "Provides storage for::Stored on"
       }
     ],
@@ -87,7 +90,7 @@ output "sn_ci_relationships" {
           parent_type = "cmdb_ci_linux_server"
           child  = azurerm_virtual_network.web_demo.id
           child_type = "cmdb_ci_network"
-          type   = "Inbound Connection::Outbound Connection"
+          type   = "Connects to::Connected by"
       }
     ]
   ])
