@@ -82,15 +82,13 @@ output "sn_ci_relationships" {
 
     # Map NIC to VM Relationships
     [
-      for vm in azurerm_linux_virtual_machine.web_demo : [
-        for nic_id in vm.network_interface_ids : {
+      for vm in azurerm_linux_virtual_machine.web_demo : {
           parent = vm.id
           parent_type = "cmdb_ci_linux_server"
-          child  = nic_id
+          child  = azurerm_virtual_network.web_demo.id
           child_type = "cmdb_ci_network"
           type   = "Inbound Connection::Outbound Connection"
-        }
-      ]
+      }
     ]
   ])
 }
