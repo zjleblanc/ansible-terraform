@@ -36,7 +36,8 @@ output "sn_configuration_items" {
         name           = azurerm_virtual_network.web_demo.name
         sys_class_name = "cmdb_ci_vpc"
         other = {
-          correlation_id = azurerm_virtual_network.web_demo.id
+          correlation_id        = azurerm_virtual_network.web_demo.id
+          correlation_display   = "aap.terraform.io"
           location              = azurerm_virtual_network.web_demo.location
           cost_center           = lookup(azurerm_virtual_network.web_demo.tags, "cost-center", "")
           owned_by              = lookup(azurerm_virtual_network.web_demo.tags, "owner", "")
