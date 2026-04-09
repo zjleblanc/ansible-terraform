@@ -53,7 +53,7 @@ output "sn_configuration_items" {
         sys_class_name = "cmdb_ci_subnet"
         other = {
           correlation_id = azurerm_subnet.web_demo.id
-          location              = azurerm_subnet.web_demo.location
+          location       = azurerm_subnet.web_demo.resource_group_name
           cost_center           = lookup(azurerm_subnet.web_demo.tags, "cost-center", "")
           owned_by              = lookup(azurerm_subnet.web_demo.tags, "owner", "")
           environment           = lookup(azurerm_subnet.web_demo.tags, "environment", "")
