@@ -73,7 +73,7 @@ output "sn_configuration_items" {
           correlation_display   = "aap.terraform.io"
           os_name               = vm.source_image_reference[0]["offer"]
           os_version            = vm.source_image_reference[0]["version"]
-          disk_space            = vm.os_disk.disk_size_gb * 1024 * 1024 * 1024
+          disk_space            = vm.os_disk[0].disk_size_gb * 1024 * 1024 * 1024
           ip_address            = vm.public_ip_address
           location              = vm.location
           cost_center           = lookup(vm.tags, "cost-center", "")
