@@ -137,7 +137,7 @@ resource "azurerm_linux_virtual_machine" "web_demo" {
 
 resource "azurerm_managed_disk" "web_demo" {
   count                = 2
-  name                 = "datadisk_existing_${count.index}"
+  name                 = "${var.web_vm_name}_disk_${count.index}"
   location             = azurerm_resource_group.web_demo.location
   resource_group_name  = azurerm_resource_group.web_demo.name
   storage_account_type = "Standard_LRS"
