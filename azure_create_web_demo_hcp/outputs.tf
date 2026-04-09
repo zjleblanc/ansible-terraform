@@ -108,7 +108,7 @@ output "sn_configuration_items" {
     [
       for k, disk in azurerm_managed_disk.web_demo : {
         name           = disk.name
-        sys_class_name = "cmdb_ci_cloud_storage_volume"
+        sys_class_name = "cmdb_ci_storage_volume"
         other = {
           correlation_id        = disk.id
           correlation_display   = "aap.terraform.io"
@@ -155,7 +155,7 @@ output "sn_ci_relationships" {
     [
       for attachment in azurerm_virtual_machine_data_disk_attachment.web_demo : {
         parent  = attachment.managed_disk_id
-        parent_type = "cmdb_ci_cloud_storage_volume"
+        parent_type = "cmdb_ci_storage_volume"
         child = attachment.virtual_machine_id
         child_type = "cmdb_ci_vm_instance"
         type   = "Provides storage for::Stored on"
