@@ -17,43 +17,95 @@ output "sc_task" {
 
 output "sn_configuration_items" {
   value = concat(
-    # 1. Map Virtual Machines
+    # Map location (datacenter)
     [
-      for k, vm in azurerm_linux_virtual_machine.web_demo : {
-        name           = vm.name
-        sys_class_name = "cmdb_ci_linux_server"
+      {
+        name           = azurerm_resource_group.web_demo.location
+        sys_class_name = "cmdb_ci_azure_datacenter"
         other = {
-          correlation_id    = vm.id
-          correlation_display = "aap.terraform.io"
-          ip_address        = vm.public_ip_address
-          location          = vm.location
-          cost_center       = lookup(vm.tags, "cost-center", "")
-          owned_by          = lookup(vm.tags, "owner", "")
-          short_description = "Managed by Terraform"
+          correlation_id        = "azure/" + azurerm_resource_group.web_demo.location
+          correlation_display   = "aap.terraform.io"
+          short_description     = "Azure Region: South Central US"
         }
       }
     ],
-    # 2. Map Managed Disks
-    [
-      for k, disk in azurerm_managed_disk.web_demo : {
-        name           = disk.name
-        sys_class_name = "cmdb_ci_storage_volume"
-        other = {
-          correlation_id = disk.id
-          correlation_display = "aap.terraform.io"
-          size_bytes     = disk.disk_size_gb * 1024 * 1024 * 1024
-          location       = disk.location
-          cost_center       = lookup(disk.tags, "cost-center", "")
-          owned_by          = lookup(disk.tags, "owner", "")
-          short_description = "Managed by Terraform"
-        }
-      }
-    ],
-    # 3. Map Virtual Networks
+
+    # Map Virtual Network
     [
       {
         name           = azurerm_virtual_network.web_demo.name
-        sys_class_name = "cmdb_ci_network"
+        sys_class_name = "cmdb_ci_vpc"
+        other = {
+          correlation_id = azurerm_virtual_network.web_demo.id
+          location              = azurerm_virtual_network.web_demo.location
+          cost_center           = lookup(azurerm_virtual_network.web_demo.tags, "cost-center", "")
+          owned_by              = lookup(azurerm_virtual_network.web_demo.tags, "owner", "")
+          environment           = lookup(azurerm_virtual_network.web_demo.tags, "environment", "")
+          short_description     = "Managed by Terraform"
+        }
+      }
+    ],
+
+    # Map Subnet
+    [
+      {
+        name           = azurerm_subnet.web_demo.name
+        sys_class_name = "cmdb_ci_subnet"
+        other = {
+          correlation_id = azurerm_subnet.web_demo.id
+          location              = azurerm_subnet.web_demo.location
+          cost_center           = lookup(azurerm_subnet.web_demo.tags, "cost-center", "")
+          owned_by              = lookup(azurerm_subnet.web_demo.tags, "owner", "")
+          environment           = lookup(azurerm_subnet.web_demo.tags, "environment", "")
+          short_description     = "Managed by Terraform"
+        }
+      }
+    ],
+
+    # Map Virtual Machines
+    [
+      for k, vm in azurerm_linux_virtual_machine.web_demo : {
+        name           = vm.name
+        sys_class_name = "cmdb_ci_vm_instance"
+        other = {
+          correlation_id        = vm.id
+          correlation_display   = "aap.terraform.io"
+          os_name               = vm.source_image_reference[0]["offer"]
+          os_version            = vm.source_image_reference[0]["version"]
+          disk_space            = vm.os_disk.disk_size_gb * 1024 * 1024 * 1024
+          ip_address            = vm.public_ip_address
+          location              = vm.location
+          cost_center           = lookup(vm.tags, "cost-center", "")
+          owned_by              = lookup(vm.tags, "owner", "")
+          environment           = lookup(vm.tags, "environment", "")
+          short_description     = "Managed by Terraform"
+        }
+      }
+    ],
+
+    # Map Managed Disks
+    [
+      for k, disk in azurerm_managed_disk.web_demo : {
+        name           = disk.name
+        sys_class_name = "cmdb_ci_cloud_storage_volume"
+        other = {
+          correlation_id        = disk.id
+          correlation_display   = "aap.terraform.io"
+          size_bytes            = disk.disk_size_gb * 1024 * 1024 * 1024
+          location              = disk.location
+          cost_center           = lookup(disk.tags, "cost-center", "")
+          owned_by              = lookup(disk.tags, "owner", "")
+          environment           = lookup(disk.tags, "environment", "")
+          short_description     = "Managed by Terraform"
+        }
+      }
+    ],
+
+    # Map Virtual Networks
+    [
+      {
+        name           = azurerm_virtual_network.web_demo.name
+        sys_class_name = "cmdb_ci_vpc"
         other = {
           correlation_id = azurerm_virtual_network.web_demo.id
           correlation_display = "aap.terraform.io"
@@ -72,13 +124,23 @@ output "sn_ci_relationships" {
   # {parent descriptor}::{child descriptor}
 
   value = flatten([
+    # Map VNet to Datacenter
+    [
+      {
+        parent = azurerm_virtual_network.web_demo.id
+        parent_type = "cmdb_ci_vpc"
+        child = azurerm_resource_group.web_demo.location
+        child_type = "cmdb_ci_azure_datacenter"
+        type = "Located in::Houses"
+      }
+    ],
     # Map Disk to VM Relationships
     [
       for attachment in azurerm_virtual_machine_data_disk_attachment.web_demo : {
         parent  = attachment.managed_disk_id
-        parent_type = "cmdb_ci_storage_volume"
+        parent_type = "cmdb_ci_cloud_storage_volume"
         child = attachment.virtual_machine_id
-        child_type = "cmdb_ci_linux_server"
+        child_type = "cmdb_ci_vm_instance"
         type   = "Provides storage for::Stored on"
       }
     ],
@@ -87,11 +149,11 @@ output "sn_ci_relationships" {
     [
       for vm in azurerm_linux_virtual_machine.web_demo : {
           parent = vm.id
-          parent_type = "cmdb_ci_linux_server"
+          parent_type = "cmdb_ci_vm_instance"
           child  = azurerm_virtual_network.web_demo.id
-          child_type = "cmdb_ci_network"
+          child_type = "cmdb_ci_vpc"
           type   = "Connects to::Connected by"
       }
-    ]
+    ],
   ])
 }
