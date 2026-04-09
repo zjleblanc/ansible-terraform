@@ -23,9 +23,9 @@ output "sn_configuration_items" {
         name           = azurerm_resource_group.web_demo.location
         sys_class_name = "cmdb_ci_azure_datacenter"
         other = {
-          correlation_id        = concat("azure/", lower(azurerm_resource_group.web_demo.location))
+          correlation_id        = "azure/${lower(azurerm_resource_group.web_demo.location)}"
           correlation_display   = "aap.terraform.io"
-          short_description     = concat("azure region: ", lower(azurerm_resource_group.web_demo.location))
+          short_description     = "azure region: ${lower(azurerm_resource_group.web_demo.location)}"
         }
       }
     ],
@@ -133,7 +133,7 @@ output "sn_ci_relationships" {
       {
         parent = azurerm_virtual_network.web_demo.id
         parent_type = "cmdb_ci_vpc"
-        child = concat("azure/", lower(azurerm_resource_group.web_demo.location))
+        child = "azure/${lower(azurerm_resource_group.web_demo.location)}"
         child_type = "cmdb_ci_azure_datacenter"
         type = "Located in::Houses"
       }
