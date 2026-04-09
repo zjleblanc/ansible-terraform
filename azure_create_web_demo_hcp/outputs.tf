@@ -165,10 +165,10 @@ output "sn_ci_relationships" {
     # Map NIC to VM Relationships
     [
       for k, nic in azurerm_network_interface.web_demo : {
-        parent = nic.id
-        parent_type = "cmdb_ci_nic"
-        child = nic.virtual_machine_id
-        child_type = "cmdb_ci_vm_instance"
+        parent = nic.virtual_machine_id
+        parent_type = "cmdb_ci_vm_instance"
+        child = nic.id
+        child_type = "cmdb_ci_nic"
         type   = "IP Connection::IP Connection"
       }
     ],
