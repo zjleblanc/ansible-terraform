@@ -3,7 +3,7 @@ data "azurerm_client_config" "current" {}
 resource "azurerm_resource_group" "web_demo" {
   name     = var.az_resource_group
   location = var.az_region
-  tags = var.web_tags_base
+  tags     = var.web_tags_base
 }
 
 resource "azurerm_virtual_network" "web_demo" {
@@ -11,7 +11,7 @@ resource "azurerm_virtual_network" "web_demo" {
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.web_demo.location
   resource_group_name = azurerm_resource_group.web_demo.name
-  tags = var.web_tags_base
+  tags                = var.web_tags_base
 }
 
 resource "azurerm_subnet" "web_demo" {
@@ -25,7 +25,7 @@ resource "azurerm_network_security_group" "web_demo" {
   name                = var.web_nsg_name
   resource_group_name = azurerm_resource_group.web_demo.name
   location            = azurerm_resource_group.web_demo.location
-  tags = var.web_tags_base
+  tags                = var.web_tags_base
 
   security_rule {
     name                       = "ssh"
@@ -37,7 +37,7 @@ resource "azurerm_network_security_group" "web_demo" {
     source_port_range          = "*"
     destination_address_prefix = "*"
     destination_port_range     = "22"
-    description = "allow ssh mgmt of vms"
+    description                = "allow ssh mgmt of vms"
   }
 
   security_rule {
@@ -50,7 +50,7 @@ resource "azurerm_network_security_group" "web_demo" {
     source_port_range          = "*"
     destination_address_prefix = "*"
     destination_port_range     = "443"
-    description = "allow https traffic for web server"
+    description                = "allow https traffic for web server"
   }
 
   security_rule {
@@ -63,7 +63,7 @@ resource "azurerm_network_security_group" "web_demo" {
     source_port_range          = "*"
     destination_address_prefix = "*"
     destination_port_range     = "80"
-    description = "allow http traffic for web server"
+    description                = "allow http traffic for web server"
   }
 }
 
@@ -78,7 +78,7 @@ resource "azurerm_public_ip" "web_demo" {
   location            = azurerm_resource_group.web_demo.location
   resource_group_name = azurerm_resource_group.web_demo.name
   allocation_method   = "Static"
-  tags = var.web_tags_base
+  tags                = var.web_tags_base
 }
 
 resource "azurerm_network_interface" "web_demo" {
@@ -86,13 +86,13 @@ resource "azurerm_network_interface" "web_demo" {
   name                = "${var.web_nic_name}${count.index}"
   location            = azurerm_resource_group.web_demo.location
   resource_group_name = azurerm_resource_group.web_demo.name
-  tags = var.web_tags_base
+  tags                = var.web_tags_base
 
   ip_configuration {
     name                          = "web-demo-ip-configuration"
     subnet_id                     = azurerm_subnet.web_demo.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id = azurerm_public_ip.web_demo[count.index].id
+    public_ip_address_id          = azurerm_public_ip.web_demo[count.index].id
   }
 }
 
@@ -101,7 +101,7 @@ resource "azurerm_ssh_public_key" "web_demo" {
   resource_group_name = azurerm_resource_group.web_demo.name
   location            = azurerm_resource_group.web_demo.location
   public_key          = var.web_demo_ssh_pubkey
-  tags = var.web_tags_base
+  tags                = var.web_tags_base
 }
 
 resource "azurerm_linux_virtual_machine" "web_demo" {
@@ -111,7 +111,7 @@ resource "azurerm_linux_virtual_machine" "web_demo" {
   resource_group_name   = azurerm_resource_group.web_demo.name
   network_interface_ids = [azurerm_network_interface.web_demo[count.index].id]
   size                  = var.web_vm_size
-  tags = var.web_tags_base
+  tags                  = var.web_tags_base
 
   source_image_reference {
     publisher = "RedHat"
@@ -143,7 +143,7 @@ resource "azurerm_managed_disk" "web_demo" {
   storage_account_type = "Standard_LRS"
   create_option        = "Empty"
   disk_size_gb         = "1024"
-  tags = var.web_tags_base
+  tags                 = var.web_tags_base
 }
 
 resource "azurerm_virtual_machine_data_disk_attachment" "web_demo" {

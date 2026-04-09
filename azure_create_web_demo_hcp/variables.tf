@@ -9,10 +9,10 @@ variable "az_resource_group" { default = "tf-web-demo-rg" }
 variable "az_region" { default = "southcentralus" }
 variable "web_tags_base" {
   default = {
-    owner = "zleblanc"
-    demo = "web"
-    deployment = "terraform"
-    config = "ansible"
+    owner       = "zleblanc"
+    demo        = "web"
+    deployment  = "terraform"
+    config      = "ansible"
     cost-center = "ZJL"
   }
 }
@@ -28,14 +28,14 @@ variable "web_demo_ssh_pubkey_name" { default = "web-demo-ssh-pubkey" }
 variable "web_demo_ssh_pubkey" {}
 # Output metadata
 variable "aap_job_url" {
-  type        = string
+  type    = string
   default = "N/A"
 }
 variable "aap_workflow_url" {
-  type        = string
+  type    = string
   default = "N/A"
 }
 variable "sc_task" {
-  type        = string
+  type    = string
   default = "N/A"
 }
