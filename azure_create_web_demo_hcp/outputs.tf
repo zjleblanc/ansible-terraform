@@ -83,6 +83,25 @@ output "sn_configuration_items" {
       }
     ],
 
+    # Map Network Interfaces
+    [
+      for k, nic in azurerm_network_interface.web_demo : {
+        name           = nic.name
+        sys_class_name = "cmdb_ci_nic"
+        other = {
+          correlation_id        = nic.id
+          correlation_display   = "aap.terraform.io"
+          ip_address            = nic.private_ip_address
+          mac_address           = nic.mac_address
+          location              = nic.location
+          cost_center           = lookup(nic.tags, "cost-center", "")
+          owned_by              = lookup(nic.tags, "owner", "")
+          environment           = lookup(nic.tags, "environment", "")
+          short_description     = "Managed by Terraform"
+        }
+      }
+    ],
+
     # Map Managed Disks
     [
       for k, disk in azurerm_managed_disk.web_demo : {
@@ -97,22 +116,6 @@ output "sn_configuration_items" {
           owned_by              = lookup(disk.tags, "owner", "")
           environment           = lookup(disk.tags, "environment", "")
           short_description     = "Managed by Terraform"
-        }
-      }
-    ],
-
-    # Map Virtual Networks
-    [
-      {
-        name           = azurerm_virtual_network.web_demo.name
-        sys_class_name = "cmdb_ci_vpc"
-        other = {
-          correlation_id = azurerm_virtual_network.web_demo.id
-          correlation_display = "aap.terraform.io"
-          location       = azurerm_virtual_network.web_demo.location
-          cost_center       = lookup(azurerm_virtual_network.web_demo.tags, "cost-center", "")
-          owned_by          = lookup(azurerm_virtual_network.web_demo.tags, "owner", "")
-          short_description = "Managed by Terraform"
         }
       }
     ]
@@ -134,6 +137,18 @@ output "sn_ci_relationships" {
         type = "Located in::Houses"
       }
     ],
+
+    # Map Subnet to VNet Relationships
+    [
+      {
+        parent = azurerm_subnet.web_demo.id
+        parent_type = "cmdb_ci_subnet"
+        child = azurerm_virtual_network.web_demo.id
+        child_type = "cmdb_ci_vpc"
+        type = "Located in::Houses"
+      }
+    ],
+
     # Map Disk to VM Relationships
     [
       for attachment in azurerm_virtual_machine_data_disk_attachment.web_demo : {
@@ -147,13 +162,26 @@ output "sn_ci_relationships" {
 
     # Map NIC to VM Relationships
     [
-      for vm in azurerm_linux_virtual_machine.web_demo : {
-          parent = vm.id
-          parent_type = "cmdb_ci_vm_instance"
-          child  = azurerm_virtual_network.web_demo.id
-          child_type = "cmdb_ci_vpc"
-          type   = "Connects to::Connected by"
+      for k, nic in azurerm_network_interface.web_demo : {
+        parent = nic.id
+        parent_type = "cmdb_ci_nic"
+        child = nic.virtual_machine_id
+        child_type = "cmdb_ci_vm_instance"
+        type   = "IP Connection::IP Connection"
       }
+    ],
+
+    # Map NIC to Subnet Relationships
+    [
+      for k, nic in azurerm_network_interface.web_demo : [
+        for ip_config in nic.ip_configuration : {
+          parent = nic.id
+          parent_type = "cmdb_ci_nic"
+          child = ip_config.subnet_id
+          child_type = "cmdb_ci_subnet"
+          type   = "Connects to::Connected by"
+        }
+      ]
     ],
   ])
 }
