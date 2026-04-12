@@ -1,0 +1,103 @@
+---
+- name: Configure web server
+  hosts: tag_demo_web
+  become: true
+
+  vars:
+    aap_workflow_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/workflow/{{ awx_workflow_job_id | default('-1') }}/output"
+    aap_job_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/playbook/{{ awx_job_id | default('-1') }}/output"
+
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Install httpd
+      ansible.builtin.package:
+        name: httpd
+        state: present
+
+    - name: Start and enable httpd service
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+
+    - name: Allow http traffic
+      ansible.posix.firewalld:
+        port: 80/tcp
+        permanent: true
+        immediate: true
+        state: enabled
+        zone: public
+
+    - name: Create a custom index.html file
+      vars:
+        subtitle: "running on azure vm {{ computer_name }} @ {{ public_ip_address }}"
+      ansible.builtin.template:
+        dest: /var/www/html/index.html
+        src: index.html.j2
+
+    - name: Set stats for task update
+      delegate_to: localhost
+      when: sc_task_created is defined
+      block:
+        - name: Prep stats for task update
+          ansible.builtin.set_fact:
+            _update_sc_task_sys_id: "{{ sc_task_created[inventory_hostname]['sys_id'] }}"
+            _update_sc_task_data:
+              cmdb_ci: "{{ inventory_hostname }}"
+              work_notes:  >-
+                [code]
+                <p>Ansible Automation Platform Workflow:</p>
+                <a href="{{ aap_workflow_url }}">View Workflow</a>
+                <p>Ansible Automation Platform Job:</p>
+                <a href="{{ aap_job_url }}">View Job</a>
+                <p>Web server deployed on <strong>{{ inventory_hostname }}</strong><br>
+                <a href="http://{{ public_ip_address }}">View Site</a></p>
+                [/code]
+              close_notes: Web server configuration complete
+              state: 3 # Closed complete
+
+        - name: Set stats for task update
+          ansible.builtin.set_stats:
+            data: >
+              {
+                "update_sc_task_sys_id": {
+                  "{{ inventory_hostname }}": "{{ _update_sc_task_sys_id }}"
+                },
+                "update_sc_task_data_overrides": {
+                  "{{ inventory_hostname }}": {{ _update_sc_task_data }}
+                }
+              }
+
+- name: Prepare request item update
+  hosts: "{{ (create_sc_task_data is defined) | ternary('localhost', omit) }}"
+  gather_facts: false
+  become: false
+
+  vars:
+    aap_workflow_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/workflow/{{ awx_workflow_job_id | default('-1') }}/output"
+
+  tasks:
+    - name: Prep stats for request item update
+      ansible.builtin.set_fact:
+        _update_ritm_data:
+          work_notes:  >-
+            [code]
+            <p>Ansible Automation Platform Workflow:</p>
+            <a href="{{ aap_workflow_url }}">View Workflow</a>
+            [/code]
+          close_notes: AAP + Terraform deployment complete
+          state: 3 # Closed complete
+
+    - name: Set stats for request item update
+      ansible.builtin.set_stats:
+        data: >
+          {
+            "update_ritm_sys_id": {
+              "{{ inventory_hostname }}": "{{ create_sc_task_data['request_item_sys_id'] }}"
+            },
+            "update_ritm_data_overrides": {
+              "{{ inventory_hostname }}": {{ _update_ritm_data }}
+            }
+          }
