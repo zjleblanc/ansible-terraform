@@ -5,7 +5,7 @@ variable "az_tenant_id" { type = string }
 variable "az_subscription_id" { type = string }
 
 # Generic Az vars
-variable "az_resource_group" { default = "tf-web-demo-rg" }
+variable "az_resource_group" { default = "aap-tfe-web-demo-rg" }
 variable "az_region" { default = "southcentralus" }
 variable "web_tags_base" {
   default = {
