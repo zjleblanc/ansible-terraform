@@ -1,0 +1,29 @@
+---
+- name: TFE Test
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  vars:
+    tfe_workspace_id: "ws-3HSFbeWtKGjzwrzG"
+
+  tasks:
+    - name: Gather information about a workspace by ID
+      register: r_workspace
+      hashicorp.terraform.workspace_info:
+        workspace_id: "{{ tfe_workspace_id }}"
+
+    - name: Use output to get configuration versio info
+      register: r_configuration_version
+      hashicorp.terraform.configuration_version_info:
+        configuration_version_id: "{{ r_workspace.workspace.relationships['current-configuration-version'].data.id }}"
+
+    - name: Create a new Terraform run with auto-apply
+      hashicorp.terraform.run:
+        workspace_id: "{{ r_workspace.workspace.id }}"
+        run_message: "AAP_WF:{{ awx_workflow_job_id }} AAP_JOB:{{ awx_job_id }} GH_SHA:{{ github_sha }} GH_RUN:{{ github_run_id }}"
+        poll: true
+        poll_interval: 15
+        poll_timeout: 3600
+        auto_apply: true
+        state: present

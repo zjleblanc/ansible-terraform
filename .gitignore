@@ -1,6 +1,7 @@
 # Local
 .ansible
 .cache
+.vscode
 **/.DS_Store
 
 azure_create_web_demo_hcp/.terraform*

@@ -1,0 +1,116 @@
+# Launches an Ansible Automation Platform (Controller) Workflow Job Template via the API.
+#
+# Required repository secrets:
+#   AAP_CONTROLLER_URL           — Base URL, e.g. https://aap.example.com (no trailing slash required)
+#   AAP_OAUTH_TOKEN              — OAuth2 access token (Application or user PAT with launch permission)
+#   AAP_WORKFLOW_JOB_TEMPLATE_ID — Numeric ID of the Workflow Job Template
+#
+# Repository variable (Settings → Secrets and variables → Actions → Variables), or set the same name as a secret:
+#   TFE_WORKFLOW_ID              — Terraform Cloud / Enterprise workspace id (e.g. ws-…). Exposed as job env
+#                                  TFE_WORKFLOW_ID and sent to AAP launch API as extra_vars.workspace_id.
+#
+# GitHub metadata is also sent as extra_vars (snake_case) for use in Ansible:
+#   tfe_workspace_id, github_repository, github_ref, github_ref_name, github_sha, github_workflow,
+#   github_workflow_ref, github_run_id, github_run_number, github_run_attempt, github_actor,
+#   github_event_name, github_server_url, github_run_url, github_job, workflow_dispatch_comment
+#
+# Path filters: push is limited to azure_create_web_demo_tfe_aap. workflow_dispatch has no native paths
+# filter in GitHub Actions, so manual runs are always allowed.
+
+name: Launch AAP workflow
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'azure_create_web_demo_tfe_aap/**'
+  workflow_dispatch:
+    inputs:
+      ad_hoc_comment:
+        description: Launch comment
+        required: true
+        default: 'Ad-hoc launch to test integration between GitHub, AAP, and TFE'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  launch:
+    name: Trigger AAP workflow job template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Launch workflow job template
+        env:
+          AAP_CONTROLLER_URL: ${{ secrets.AAP_CONTROLLER_URL }}
+          AAP_OAUTH_TOKEN: ${{ secrets.AAP_OAUTH_TOKEN }}
+          AAP_WORKFLOW_JOB_TEMPLATE_ID: ""
+          TFE_WORKSPACE_ID: "ws-3HSFbeWtKGjzwrzG"
+          # GitHub → AAP extra_vars (mirrored as job env for the launch jq payload)
+          GHA_REPOSITORY: ${{ github.repository }}
+          GHA_REF: ${{ github.ref }}
+          GHA_REF_NAME: ${{ github.ref_name }}
+          GHA_SHA: ${{ github.sha }}
+          GHA_WORKFLOW: ${{ github.workflow }}
+          GHA_WORKFLOW_REF: ${{ github.workflow_ref }}
+          GHA_RUN_ID: ${{ github.run_id }}
+          GHA_ACTOR: ${{ github.actor }}
+          GHA_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GHA_JOB: ${{ github.job }}
+        run: |
+          set -euo pipefail
+
+          missing=""
+          [ -z "${AAP_CONTROLLER_URL:-}" ] && missing="${missing} AAP_CONTROLLER_URL"
+          [ -z "${AAP_OAUTH_TOKEN:-}" ] && missing="${missing} AAP_OAUTH_TOKEN"
+          URL="${AAP_CONTROLLER_URL}/api/controller/v2/workflow_job_templates/${AAP_WORKFLOW_JOB_TEMPLATE_ID}/launch/"
+
+          # extra_vars must be a JSON string per Controller workflow_job_templates launch API; jq keeps escaping correct.
+          EV_JSON=$(jq -cn \
+            --arg ws "${TFE_WORKSPACE_ID}" \
+            --arg repo "${GHA_REPOSITORY}" \
+            --arg ref "${GHA_REF}" \
+            --arg ref_name "${GHA_REF_NAME}" \
+            --arg sha "${GHA_SHA}" \
+            --arg workflow "${GHA_WORKFLOW}" \
+            --arg workflow_ref "${GHA_WORKFLOW_REF}" \
+            --arg run_id "${GHA_RUN_ID}" \
+            --arg actor "${GHA_ACTOR}" \
+            --arg run_url "${GHA_RUN_URL}" \
+            --arg job "${GHA_JOB}" \
+            '{
+              tfe_workspace_id: $ws,
+              github_repository: $repo,
+              github_ref: $ref,
+              github_ref_name: $ref_name,
+              github_sha: $sha,
+              github_workflow: $workflow,
+              github_workflow_ref: $workflow_ref,
+              github_run_id: $run_id,
+              github_actor: $actor,
+              github_run_url: $run_url,
+              github_job: $job,
+            }')
+          # -c: single-line JSON so the extra_vars string is not wrapped across lines (invalid JSON).
+          LAUNCH_JSON=$(jq -cn --argjson ev "$EV_JSON" '{extra_vars: ($ev | tojson)}')
+
+          echo "Posting workflow job template launch to ${URL}"
+          HTTP_CODE=$(curl -sS -o /tmp/aap_body.txt -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${AAP_OAUTH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "${LAUNCH_JSON}" \
+            "${URL}")
+          BODY=$(cat /tmp/aap_body.txt)
+          echo "${BODY}"
+
+          case "${HTTP_CODE}" in
+            200|201|202)
+              echo "AAP accepted launch (HTTP ${HTTP_CODE})"
+              ;;
+            *)
+              echo "::error::AAP API returned HTTP ${HTTP_CODE}"
+              exit 1
+              ;;
+          esac
