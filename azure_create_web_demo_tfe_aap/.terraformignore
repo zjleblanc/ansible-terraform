@@ -1,0 +1,3 @@
+# Used when uploading configuration to HCP Terraform / Terraform Enterprise (API-driven runs).
+.terraform/
+.git/
