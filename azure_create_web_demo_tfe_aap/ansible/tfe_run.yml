@@ -8,7 +8,7 @@
     tfe_workspace_id: "ws-3HSFbeWtKGjzwrzG"
     tfe_host: "{{ lookup('env', 'TF_HOSTNAME') }}"
     tfe_token: "{{ lookup('env', 'TF_TOKEN') }}"
-    tfe_state_file_dest: "{{ playbook_dir }}/{{ tfe_workspace }}_state.json"
+    tfe_state_file_dest: "{{ playbook_dir }}/{{ tfe_workspace_id }}_state.json"
 
   tasks:
     - name: Create a new Terraform run with auto-apply
