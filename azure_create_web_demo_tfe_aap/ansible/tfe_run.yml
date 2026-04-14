@@ -6,28 +6,45 @@
 
   vars:
     tfe_workspace_id: "ws-3HSFbeWtKGjzwrzG"
+    tfe_host: "{{ lookup('env', 'TF_HOSTNAME') }}"
+    tfe_token: "{{ lookup('env', 'TF_TOKEN') }}"
+    tfe_state_file_dest: "{{ playbook_dir }}/{{ tfe_workspace }}_state.json"
 
   tasks:
-    - name: Gather information about a workspace by ID
-      register: r_workspace
-      hashicorp.terraform.workspace_info:
-        workspace_id: "{{ tfe_workspace_id }}"
-
-    - name: Use output to get configuration versio info
-      register: r_configuration_version
-      hashicorp.terraform.configuration_version_info:
-        configuration_version_id: "{{ r_workspace.workspace.relationships['current-configuration-version'].data.id }}"
-
-    - name: Debug message
-      ansible.builtin.debug:
-        msg: "AAP_WF:{{ awx_workflow_job_id }} AAP_JOB:{{ awx_job_id }} GH_SHA:{{ github_sha[:7] }} GH_RUN:{{ github_run_id }}"
-
     - name: Create a new Terraform run with auto-apply
       hashicorp.terraform.run:
         workspace_id: "{{ r_workspace.workspace.id }}"
-        run_message: "AAP_WF:{{ awx_workflow_job_id }} AAP_JOB:{{ awx_job_id }} GH_SHA:{{ github_sha }} GH_RUN:{{ github_run_id }}"
+        run_message: "https://ansible.autodotes.com/execution/jobs/playbook/{{ awx_job_id }}/output"
         poll: true
         poll_interval: 15
         poll_timeout: 3600
         auto_apply: true
         state: present
+
+    - name: Gather information about a workspace by ID
+      register: r_workspace
+      hashicorp.terraform.workspace_info:
+        workspace_id: "{{ tfe_workspace_id }}"
+
+    - name: Get State Version Details
+      vars:
+        _state_version_url: "{{ r_workspace.workspace.relationships['current-state-version'].data.links.related }}"
+      register: r_state_version_details
+      ansible.builtin.uri:
+        url: "https://{{ tfe_host }}{{ _state_version_url }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ tfe_token }}"
+          Content-Type: "application/vnd.api+json"
+
+    - name: Download Actual State JSON
+      register: r_tf_state
+      ansible.builtin.uri:
+        url: "{{ r_state_version_details.json.data.attributes['hosted-state-download-url'] }}"
+        method: GET
+        # Note: TFE download URLs are pre-signed; you usually don't need the Auth header here
+        dest: "{{ tfe_state_file_dest }}"
+
+    - name: Display State Information
+      ansible.builtin.debug:
+        msg: "{{ lookup('file', tfe_state_file_dest) | from_json }}"
