@@ -43,9 +43,9 @@ jobs:
     steps:
       - name: Launch workflow job template
         env:
-          AAP_CONTROLLER_URL: ${{ secrets.AAP_CONTROLLER_URL }}
+          AAP_GATEWAY_URL: ${{ variables.AAP_CONTROLLER_URL }}
           AAP_OAUTH_TOKEN: ${{ secrets.AAP_OAUTH_TOKEN }}
-          AAP_WORKFLOW_JOB_TEMPLATE_ID: ""
+          AAP_WORKFLOW_JOB_TEMPLATE_ID: ${{ variables.AAP_WORKFLOW_JOB_TEMPLATE_ID }}
           TFE_WORKSPACE_ID: "ws-3HSFbeWtKGjzwrzG"
           # GitHub → AAP extra_vars (mirrored as job env for the launch jq payload)
           GHA_REPOSITORY: ${{ github.repository }}
