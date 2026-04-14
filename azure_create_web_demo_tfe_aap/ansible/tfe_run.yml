@@ -31,7 +31,7 @@
         _state_version_url: "{{ r_workspace.workspace.relationships['current-state-version'].links.related }}"
       register: r_state_version_details
       ansible.builtin.uri:
-        url: "https://{{ tfe_host }}{{ _state_version_url }}"
+        url: "{{ tfe_host }}{{ _state_version_url }}"
         method: GET
         headers:
           Authorization: "Bearer {{ tfe_token }}"
