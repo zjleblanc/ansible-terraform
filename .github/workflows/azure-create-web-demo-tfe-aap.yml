@@ -44,7 +44,7 @@ jobs:
     steps:
       - name: Launch workflow job template
         env:
-          AAP_GATEWAY_URL: ${{ vars.AAP_CONTROLLER_URL }}
+          AAP_GATEWAY_URL: ${{ vars.AAP_GATEWAY_URL }}
           AAP_OAUTH_TOKEN: ${{ secrets.AAP_OAUTH_TOKEN }}
           AAP_WORKFLOW_JOB_TEMPLATE_ID: ${{ vars.AAP_WORKFLOW_JOB_TEMPLATE_ID }}
           TFE_WORKSPACE_ID: "ws-3HSFbeWtKGjzwrzG"
