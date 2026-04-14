@@ -69,6 +69,7 @@ jobs:
 
           # extra_vars must be a JSON string per Controller workflow_job_templates launch API; jq keeps escaping correct.
           EV_JSON=$(jq -cn \
+            --arg aap_host "${AAP_GATEWAY_URL}" \
             --arg ws "${TFE_WORKSPACE_ID}" \
             --arg repo "${GHA_REPOSITORY}" \
             --arg ref "${GHA_REF}" \
@@ -81,6 +82,7 @@ jobs:
             --arg run_url "${GHA_RUN_URL}" \
             --arg job "${GHA_JOB}" \
             '{
+              aap_host: $aap_host,
               tfe_workspace_id: $ws,
               github_repository: $repo,
               github_ref: $ref,

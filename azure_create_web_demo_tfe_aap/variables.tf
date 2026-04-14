@@ -13,6 +13,7 @@ variable "web_tags_base" {
     demo        = "web"
     deployment  = "terraform"
     config      = "ansible"
+    environment = "sandbox"
     cost-center = "ZJL"
   }
 }
