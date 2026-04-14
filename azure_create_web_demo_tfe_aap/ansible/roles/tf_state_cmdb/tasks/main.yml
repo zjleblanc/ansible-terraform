@@ -1,0 +1,240 @@
+- name: Build sn_configuration_items (datacenters)
+  loop: "{{ tf_state_cmdb_dc_location_names}}"
+  loop_control:
+    loop_var: _dc
+    label: "{{ _dc }}"
+  vars:
+    _sn_ci_dc:
+      name: "{{ _dc }}"
+      sys_class_name: cmdb_ci_azure_datacenter
+      other:
+        correlation_id: "azure/{{ _dc | lower }}"
+        correlation_display: aap.terraform.io
+        short_description: "azure region: {{ _dc | lower }}"
+  ansible.builtin.set_fact:
+    _sn_ci_dcs: "{{ _sn_ci_dcs | default([]) + [_sn_ci_dc] }}"
+
+- name: Build sn_configuration_items (VPCs / VNets)
+  loop: "{{ tf_state_cmdb_vnets }}"
+  loop_control:
+    loop_var: _vnet
+    label: "{{ _vnet['values']['name'] }}"
+  vars:
+    _sn_ci_vpc:
+      name: "{{ _vnet['values']['name'] }}"
+      sys_class_name: cmdb_ci_vpc
+      other:
+        correlation_id: "{{ _vnet['values']['id'] }}"
+        correlation_display: aap.terraform.io
+        location: "{{ _vnet['values']['location'] }}"
+        cost_center: "{{ (_vnet['values']['tags'] | default({})).get('cost-center', '') }}"
+        owned_by: "{{ (_vnet['values']['tags'] | default({})).get('owner', '') }}"
+        environment: "{{ (_vnet['values']['tags'] | default({})).get('environment', '') }}"
+        short_description: Managed by Terraform
+  ansible.builtin.set_fact:
+    _sn_ci_vpcs: "{{ _sn_ci_vpcs | default([]) + [_sn_ci_vpc] }}"
+
+- name: Build sn_configuration_items (subnets)
+  loop: "{{ tf_state_cmdb_subnets }}"
+  loop_control:
+    loop_var: _subnet
+    label: "{{ _subnet['values']['name'] }}"
+  vars:
+    _parent_vnet: >-
+      {{
+        (
+          tf_state_cmdb_vnets
+          | selectattr('values.resource_group_name', 'equalto', _subnet['values']['resource_group_name'])
+          | selectattr('values.name', 'equalto', _subnet['values']['virtual_network_name'])
+          | list
+          | first
+        ) | default(none, true)
+      }}
+    _sn_ci_subnet:
+      name: "{{ _subnet['values']['name'] }}"
+      sys_class_name: cmdb_ci_subnet
+      other:
+        correlation_id: "{{ _subnet['values']['id'] }}"
+        correlation_display: aap.terraform.io
+        location: "{{ _parent_vnet['values']['location'] if _parent_vnet else '' }}"
+        cost_center: "{{ ((_parent_vnet['values']['tags'] | default({})) if _parent_vnet else {}).get('cost-center', '') }}"
+        owned_by: "{{ ((_parent_vnet['values']['tags'] | default({})) if _parent_vnet else {}).get('owner', '') }}"
+        environment: "{{ ((_parent_vnet['values']['tags'] | default({})) if _parent_vnet else {}).get('environment', '') }}"
+        short_description: Managed by Terraform
+  ansible.builtin.set_fact:
+    _sn_ci_subnets: "{{ _sn_ci_subnets | default([]) + [_sn_ci_subnet] }}"
+
+- name: Build sn_configuration_items (VMs, NICs, disks)
+  loop: "{{ tf_state_cmdb_vms }}"
+  loop_control:
+    loop_var: _vm
+    label: "{{ _vm['values']['name'] }}"
+  vars:
+    _sn_ci_vm:
+      name: "{{ _vm['values']['name'] }}"
+      sys_class_name: cmdb_ci_vm_instance
+      other:
+        correlation_id: "{{ _vm['values']['id'] }}"
+        correlation_display: aap.terraform.io
+        os_name: "{{ _vm['values']['source_image_reference'][0].offer }}"
+        os_version: "{{ _vm['values']['source_image_reference'][0].version }}"
+        disk_space: "{{ _vm['values']['os_disk'][0].disk_size_gb | int * 1024 * 1024 * 1024 }}"
+        ip_address: "{{ _vm['values']['public_ip_address'] }}"
+        location: "{{ _vm['values']['location'] }}"
+        cost_center: "{{ (_vm['values']['tags'] | default({})).get('cost-center', '') }}"
+        owned_by: "{{ (_vm['values']['tags'] | default({})).get('owner', '') }}"
+        environment: "{{ (_vm['values']['tags'] | default({})).get('environment', '') }}"
+        short_description: Managed by Terraform
+  ansible.builtin.set_fact:
+    _sn_ci_vms: "{{ _sn_ci_vms | default([]) + [_sn_ci_vm] }}"
+
+- name: Build sn_configuration_items (NIC list)
+  loop: "{{ tf_state_cmdb_nics }}"
+  loop_control:
+    loop_var: _nic
+    label: "{{ _nic['values']['name'] }}"
+  vars:
+    _sn_ci_nic:
+      name: "{{ _nic['values']['name'] }}"
+      sys_class_name: cmdb_ci_nic
+      other:
+        correlation_id: "{{ _nic['values']['id'] }}"
+        correlation_display: aap.terraform.io
+        ip_address: "{{ _nic['values']['private_ip_address'] }}"
+        mac_address: "{{ _nic['values']['mac_address'] }}"
+        location: "{{ _nic['values']['location'] }}"
+        cost_center: "{{ (_nic['values']['tags'] | default({})).get('cost-center', '') }}"
+        owned_by: "{{ (_nic['values']['tags'] | default({})).get('owner', '') }}"
+        environment: "{{ (_nic['values']['tags'] | default({})).get('environment', '') }}"
+        short_description: Managed by Terraform
+  ansible.builtin.set_fact:
+    _sn_ci_nics: "{{ _sn_ci_nics | default([]) + [_sn_ci_nic] }}"
+
+- name: Build sn_configuration_items (managed disks)
+  loop: "{{ tf_state_cmdb_disks }}"
+  loop_control:
+    loop_var: _disk
+    label: "{{ _disk['values']['name'] }}"
+  vars:
+    _sn_ci_disk:
+      name: "{{ _disk['values']['name'] }}"
+      sys_class_name: cmdb_ci_storage_volume
+      other:
+        correlation_id: "{{ _disk['values']['id'] }}"
+        correlation_display: aap.terraform.io
+        size_bytes: "{{ _disk['values']['disk_size_gb'] | int * 1024 * 1024 * 1024 }}"
+        location: "{{ _disk['values']['location'] }}"
+        cost_center: "{{ (_disk['values']['tags'] | default({})).get('cost-center', '') }}"
+        owned_by: "{{ (_disk['values']['tags'] | default({})).get('owner', '') }}"
+        environment: "{{ (_disk['values']['tags'] | default({})).get('environment', '') }}"
+        short_description: Managed by Terraform
+  ansible.builtin.set_fact:
+    _sn_ci_disks: "{{ _sn_ci_disks | default([]) + [_sn_ci_disk] }}"
+
+- name: Assemble sn_configuration_items
+  ansible.builtin.set_fact:
+    _sn_configuration_items: "{{ (_sn_ci_dcs | default([])) + (_sn_ci_vpcs | default([])) + (_sn_ci_subnets | default([])) + (_sn_ci_vms | default([])) + (_sn_ci_nics | default([])) + (_sn_ci_disks | default([])) }}"
+
+- name: Build sn_ci_relationships (each VNet to its Azure region / datacenter)
+  loop: "{{ tf_state_cmdb_vnets }}"
+  loop_control:
+    loop_var: _vnet
+    label: "{{ _vnet['values']['name'] }}"
+  vars:
+    _rel:
+      parent: "{{ _vnet['values']['id'] }}"
+      parent_type: cmdb_ci_vpc
+      child: "azure/{{ _vnet['values']['location'] | lower }}"
+      child_type: cmdb_ci_azure_datacenter
+      type: Located in::Houses
+  ansible.builtin.set_fact:
+    _rels_vnet_dc: "{{ _rels_vnet_dc | default([]) + [_rel] }}"
+
+- name: Build sn_ci_relationships (each subnet to its parent VNet)
+  loop: "{{ tf_state_cmdb_subnets }}"
+  loop_control:
+    loop_var: _subnet
+    label: "{{ _subnet['values']['name'] }}"
+  vars:
+    _parent_vnet: >-
+      {{
+        (
+          tf_state_cmdb_vnets
+          | selectattr('values.resource_group_name', 'equalto', _subnet['values']['resource_group_name'])
+          | selectattr('values.name', 'equalto', _subnet['values']['virtual_network_name'])
+          | list
+          | first
+        ) | default(none, true)
+      }}
+    _rel:
+      parent: "{{ _subnet['values']['id'] }}"
+      parent_type: cmdb_ci_subnet
+      child: "{{ _parent_vnet['values']['id'] }}"
+      child_type: cmdb_ci_vpc
+      type: Located in::Houses
+  when: _parent_vnet is not none
+  ansible.builtin.set_fact:
+    _rels_subnet_vnet: "{{ _rels_subnet_vnet | default([]) + [_rel] }}"
+
+- name: Build sn_ci_relationships (data disk to VM)
+  loop: "{{ tf_state_cmdb_disk_attachments }}"
+  loop_control:
+    loop_var: _attachment
+    label: "{{ _attachment['values']['managed_disk_id'] | basename }}"
+  vars:
+    _rel:
+      parent: "{{ _attachment['values']['managed_disk_id'] }}"
+      parent_type: cmdb_ci_storage_volume
+      child: "{{ _attachment['values']['virtual_machine_id'] }}"
+      child_type: cmdb_ci_vm_instance
+      type: Provides storage for::Stored on
+  ansible.builtin.set_fact:
+    _rels_disk_vm: "{{ _rels_disk_vm | default([]) + [_rel] }}"
+
+- name: Build sn_ci_relationships (NIC to VM)
+  loop: "{{ tf_state_cmdb_vms | subelements(['values', 'network_interface_ids'], skip_missing=True) }}"
+  loop_control:
+    loop_var: _vm
+    label: "{{ _vm['values']['name'] }}"
+  vars:
+    _rel:
+      parent: "{{ _vm['values']['id'] }}"
+      parent_type: cmdb_ci_vm_instance
+      child: "{{ _vm['values']['network_interface_ids'][0] }}"
+      child_type: cmdb_ci_nic
+      type: IP Connection::IP Connection
+  ansible.builtin.set_fact:
+    _rels_nic_vm: "{{ _rels_nic_vm | default([]) + [_rel] }}"
+
+- name: Build sn_ci_relationships (NIC to subnet)
+  loop: "{{ tf_state_cmdb_nics | subelements(['values', 'ip_configuration'], skip_missing=True) }}"
+  loop_control:
+    loop_var: _nic
+    label: "{{ _nic['values']['name'] }}"
+  vars:
+    _rel:
+      parent: "{{ _nic['values']['id'] }}"
+      parent_type: cmdb_ci_nic
+      child: "{{ _nic['values']['ip_configuration'][0].subnet_id }}"
+      child_type: cmdb_ci_subnet
+      type: Connects to::Connected by
+  ansible.builtin.set_fact:
+    _rels_nic_subnet: "{{ _rels_nic_subnet | default([]) + [_rel] }}"
+
+- name: Assemble sn_ci_relationships
+  ansible.builtin.set_fact:
+    _sn_ci_relationships: "{{ (_rels_vnet_dc | default([])) + (_rels_subnet_vnet | default([])) + (_rels_disk_vm | default([])) + (_rels_nic_vm | default([])) + (_rels_nic_subnet | default([])) }}"
+
+- name: Set ServiceNow stats
+  ansible.builtin.set_stats:
+    data:
+      sn_configuration_items: "{{ _sn_configuration_items }}"
+      sn_ci_relationships: "{{ _sn_ci_relationships }}"
+
+- name: Debug configuration items
+  ansible.builtin.debug:
+    msg: "{{ _sn_configuration_items }}"
+
+- name: Debug relationships
+  ansible.builtin.debug:
+    msg: "{{ _sn_ci_relationships }}"
