@@ -13,7 +13,7 @@
   tasks:
     - name: Create a new Terraform run with auto-apply
       hashicorp.terraform.run:
-        workspace_id: "{{ r_workspace.workspace.id }}"
+        workspace_id: "{{ tfe_workspace_id }}"
         run_message: "https://ansible.autodotes.com/execution/jobs/playbook/{{ awx_job_id }}/output"
         poll: true
         poll_interval: 15
