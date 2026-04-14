@@ -19,9 +19,9 @@
         run_message: "https://ansible.autodotes.com/execution/jobs/playbook/{{ awx_job_id }}/output"
         variables:
           - key: aap_workflow_url
-            value: "{{ aap_workflow_url }}"
+            value: "\"{{ aap_workflow_url }}\""
           - key: aap_job_url
-            value: "{{ aap_job_url }}"
+            value: "\"{{ aap_job_url }}\""
         poll: true
         poll_interval: 15
         poll_timeout: 3600
