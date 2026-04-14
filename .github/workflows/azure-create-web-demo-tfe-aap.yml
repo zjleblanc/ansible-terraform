@@ -14,8 +14,8 @@
 #   github_workflow_ref, github_run_id, github_run_number, github_run_attempt, github_actor,
 #   github_event_name, github_server_url, github_run_url, github_job, workflow_dispatch_comment
 #
-# Path filters: push is limited to azure_create_web_demo_tfe_aap. workflow_dispatch has no native paths
-# filter in GitHub Actions, so manual runs are always allowed.
+# Path filters: push runs when azure_create_web_demo_tfe_aap or this workflow file changes. workflow_dispatch
+# has no native paths filter in GitHub Actions, so manual runs are always allowed.
 
 name: Launch AAP workflow
 
@@ -24,6 +24,7 @@ on:
     branches:
       - master
     paths:
+      - '.github/workflows/azure-create-web-demo-tfe-aap.yml'
       - 'azure_create_web_demo_tfe_aap/**'
   workflow_dispatch:
     inputs:
@@ -43,9 +44,9 @@ jobs:
     steps:
       - name: Launch workflow job template
         env:
-          AAP_GATEWAY_URL: ${{ variables.AAP_CONTROLLER_URL }}
+          AAP_GATEWAY_URL: ${{ vars.AAP_CONTROLLER_URL }}
           AAP_OAUTH_TOKEN: ${{ secrets.AAP_OAUTH_TOKEN }}
-          AAP_WORKFLOW_JOB_TEMPLATE_ID: ${{ variables.AAP_WORKFLOW_JOB_TEMPLATE_ID }}
+          AAP_WORKFLOW_JOB_TEMPLATE_ID: ${{ vars.AAP_WORKFLOW_JOB_TEMPLATE_ID }}
           TFE_WORKSPACE_ID: "ws-3HSFbeWtKGjzwrzG"
           # GitHub → AAP extra_vars (mirrored as job env for the launch jq payload)
           GHA_REPOSITORY: ${{ github.repository }}
