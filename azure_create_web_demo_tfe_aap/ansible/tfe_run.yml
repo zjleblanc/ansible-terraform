@@ -20,14 +20,14 @@
 
     - name: Debug message
       ansible.builtin.debug:
-        msg: "AAP_WF:{{ awx_workflow_job_id }} AAP_JOB:{{ awx_job_id }} GH_SHA:{{ github_sha }} GH_RUN:{{ github_run_id }}"
+        msg: "AAP_WF:{{ awx_workflow_job_id }} AAP_JOB:{{ awx_job_id }} GH_SHA:{{ github_sha[:7] }} GH_RUN:{{ github_run_id }}"
 
-    # - name: Create a new Terraform run with auto-apply
-    #   hashicorp.terraform.run:
-    #     workspace_id: "{{ r_workspace.workspace.id }}"
-    #     run_message: "AAP_WF:{{ awx_workflow_job_id }} AAP_JOB:{{ awx_job_id }} GH_SHA:{{ github_sha }} GH_RUN:{{ github_run_id }}"
-    #     poll: true
-    #     poll_interval: 15
-    #     poll_timeout: 3600
-    #     auto_apply: true
-    #     state: present
+    - name: Create a new Terraform run with auto-apply
+      hashicorp.terraform.run:
+        workspace_id: "{{ r_workspace.workspace.id }}"
+        run_message: "AAP_WF:{{ awx_workflow_job_id }} AAP_JOB:{{ awx_job_id }} GH_SHA:{{ github_sha }} GH_RUN:{{ github_run_id }}"
+        poll: true
+        poll_interval: 15
+        poll_timeout: 3600
+        auto_apply: true
+        state: present
