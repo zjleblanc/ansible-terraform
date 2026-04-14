@@ -63,9 +63,9 @@ jobs:
           set -euo pipefail
 
           missing=""
-          [ -z "${AAP_CONTROLLER_URL:-}" ] && missing="${missing} AAP_CONTROLLER_URL"
+          [ -z "${AAP_GATEWAY_URL:-}" ] && missing="${missing} AAP_GATEWAY_URL"
           [ -z "${AAP_OAUTH_TOKEN:-}" ] && missing="${missing} AAP_OAUTH_TOKEN"
-          URL="${AAP_CONTROLLER_URL}/api/controller/v2/workflow_job_templates/${AAP_WORKFLOW_JOB_TEMPLATE_ID}/launch/"
+          URL="${AAP_GATEWAY_URL}/api/controller/v2/workflow_job_templates/${AAP_WORKFLOW_JOB_TEMPLATE_ID}/launch/"
 
           # extra_vars must be a JSON string per Controller workflow_job_templates launch API; jq keeps escaping correct.
           EV_JSON=$(jq -cn \
