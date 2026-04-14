@@ -40,10 +40,11 @@
     - name: Download Actual State JSON
       register: r_tf_state
       ansible.builtin.uri:
-        url: "{{ r_state_version_details.json.data.attributes['hosted-state-download-url'] }}"
+        url: "{{ r_state_version_details.json.data.attributes['hosted-json-state-download-url'] }}"
         method: GET
-        # Note: TFE download URLs are pre-signed; you usually don't need the Auth header here
         dest: "{{ tfe_state_file_dest }}"
+        headers:
+          Authorization: "Bearer {{ tfe_token }}"
 
     - name: Display State Information
       ansible.builtin.debug:
