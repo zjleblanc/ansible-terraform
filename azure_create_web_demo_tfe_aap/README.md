@@ -1,109 +1,204 @@
-# Create Web Demo
+# Azure web demo: Terraform, Ansible, and ServiceNow CMDB
 
-This Terraform project contains the configurations required to deploy two Azure Virtual Machines which will serve as managed Ansible nodes to be configured as web servers.
+This folder is an end-to-end reference for **provisioning** Azure infrastructure with **Terraform** (via **Terraform Cloud / Enterprise**), **configuring** the resulting VMs with **Ansible**, and **reflecting Terraform state in the ServiceNow CMDB** as configuration items (CIs) with relationships. Optional workflow hooks show how Ansible Automation Platform can still **update ServiceNow tasks / request items** with job links when you supply ITSM context.
 
-- [Providers](./providers.tf)
-- [Variables](./variables.tf)
-- [Main](./main.tf)
+| Area | What to read |
+| --- | --- |
+| Infrastructure as code | [providers.tf](./providers.tf), [variables.tf](./variables.tf), [main.tf](./main.tf) |
+| Run + state + CMDB | [ansible/tfe_run.yml](./ansible/tfe_run.yml), [ansible/roles/tf_state_cmdb/](./ansible/roles/tf_state_cmdb/) |
+| Guest configuration | [ansible/configure_web.yml](./ansible/configure_web.yml) |
+| GitHub → AAP trigger | [`.github/workflows/azure-create-web-demo-tfe-aap.yml`](../.github/workflows/azure-create-web-demo-tfe-aap.yml) |
+
+---
+
+## GitHub Actions integration
+
+The repository workflow [azure-create-web-demo-tfe-aap.yml](../.github/workflows/azure-create-web-demo-tfe-aap.yml) **POSTs to the Ansible Automation Platform Controller API** and launches a **Workflow Job Template** so pushes (or manual runs) can start the same automation you would start from the UI.
+
+- **When it runs**: on **push** to `master` when this folder or the workflow file changes, and on **`workflow_dispatch`** (manual; optional launch comment input).
+- **What it sends**: `extra_vars` as a JSON string for the launch API, including **`aap_host`**, **`tfe_workspace_id`** (currently set in the workflow job env; align this with your workspace and with `tfe_workspace_id` / credentials used in AAP), and **GitHub run metadata** (`github_repository`, `github_ref`, `github_sha`, `github_workflow`, `github_run_url`, `github_actor`, and related fields) so playbooks or surveys can correlate an AAP run with the commit and Actions run.
+- **Configure in GitHub**: repository **variables** `AAP_GATEWAY_URL` and `AAP_WORKFLOW_JOB_TEMPLATE_ID`, and secret **`AAP_OAUTH_TOKEN`** (Bearer token with permission to launch that workflow template). The step fails fast if `AAP_GATEWAY_URL` or `AAP_OAUTH_TOKEN` is missing.
+
+Your AAP workflow should map **`tfe_workspace_id`** (and `TF_HOSTNAME` / `TF_TOKEN` from AAP credentials) into the job that runs **`tfe_run.yml`**, which today hardcodes `tfe_workspace_id` in playbook vars—override via extra_vars or survey if you wire the template to use the GitHub-supplied value.
+
+---
+
+## What this demonstrates
+
+1. **Terraform** defines a small Azure footprint: resource group, VNet, subnet, NSG, two Linux VMs with public IPs, NICs, SSH key resource, and attached data disks.
+2. **Ansible** drives a **Terraform Cloud / Enterprise** workspace run (`hashicorp.terraform.run`), then **downloads the current state JSON** and passes the `root_module.resources` list into a role that **builds CMDB payloads** (CIs + relationships) and exposes them via **`set_stats`** for a follow-on job (for example one that calls ServiceNow Table API or your `zjleblanc.servicenow.records`-style automation).
+3. A separate playbook **configures** the VMs as web servers (packages, firewalld, templated home page) against an inventory group such as `tag_demo_web`.
+4. **ServiceNow CMDB** alignment uses **correlation IDs** derived from Azure resource IDs so repeated runs can target the same logical CIs when your integration upserts by that key.
+
+```mermaid
+flowchart LR
+  subgraph provision["Provision"]
+    TFE[Terraform Cloud Enterprise]
+    TF[Terraform azurerm]
+    TFE --> TF
+  end
+  subgraph ansible["Ansible"]
+    Run[tfe_run.yml]
+    DL[Download state JSON]
+    CMDB[tf_state_cmdb role]
+    CFG[configure_web.yml]
+    Run --> DL --> CMDB
+    CFG
+  end
+  subgraph snow["ServiceNow"]
+    CIs[CMDB CIs]
+    Rels[CI relationships]
+    ITSM[Optional tasks RITM]
+  end
+  TF --> Run
+  CMDB --> CIs
+  CMDB --> Rels
+  CFG --> ITSM
+```
+
+---
 
 ## Terraform
 
 ### Resources
 
-The infrastructure is pretty simple:
-- basic Azure networking resources
-- security rules to allow for SSH (not production grade)
-- a couple of vms
-- ssh key pair
+- Azure networking: resource group, VNet, subnet, NSG (SSH, HTTP, HTTPS), subnet–NSG association  
+- Two **azurerm_linux_virtual_machine** instances with public IPs and NICs  
+- **azurerm_ssh_public_key** and per-VM **azurerm_managed_disk** + **azurerm_virtual_machine_data_disk_attachment**
 
-Lookup **source_image_reference** configurations for VMs using the Azure CLI:<br>
-`az vm image list --publisher RedHat --all --output table`
+Image SKUs are set in [main.tf](./main.tf) (`source_image_reference`). To explore images:
 
-### Important Variables
+```bash
+az vm image list --publisher RedHat --all --output table
+```
+
+### Important variables
 
 | Variable | Purpose |
 | --- | --- |
-| az_resource_group | Target resource group |
-| az_region | Azure region for the resource group / infrastructure |
-| web_tags_base | Base tags for resources deploy - I **always** recommend tags |
-| web_* | Other variables for standardized naming of deployed resources |
+| `az_resource_group`, `az_region` | Resource group name and Azure region |
+| `web_tags_base` | Tags applied to resources (also mapped into CMDB fields such as cost center, owner, environment where present) |
+| `web_*` | Naming and sizing for NICs, VMs, VNet, subnet, NSG, admin user, SSH key |
+| `az_client_id`, `az_client_secret`, `az_tenant_id`, `az_subscription_id` | Azure provider credentials |
+| `aap_job_url`, `aap_workflow_url` | Injected on each run from Ansible for traceability in Terraform variables / outputs ([outputs.tf](./outputs.tf)) |
+| `sc_task` | Reserved for broader demos (optional catalog task number); not required for CMDB mapping in this folder |
 
-## Ansible Playbook
+Backend and `terraform { cloud { ... } }` organization/workspace are configured in your environment or VCS-driven workspace, not hard-coded here.
 
-Playbooks included support executing Terraform operations via Ansible and configuration of the provisioned infrastructure. The complete product is a Workflow Job Template in Ansible Automation Platform which chains together the execution of the playbooks.
+---
 
-| Playbook | Description |
+## Ansible playbooks
+
+| Playbook | Purpose |
 | --- | --- |
-| [tf_ops.yml](./ansible/tf_ops.yml) | Based on tags, will either complete the `terraform apply` or `terraform destroy` action |
-| [configure_web.yml](./ansible/configure_web.yml) | Configures web VMs with httpd, firewalld, and a templated landing page; optionally sets stats for ServiceNow task and RITM updates |
+| [ansible/tfe_run.yml](./ansible/tfe_run.yml) | Start an auto-apply run in a TFE workspace, wait for completion, resolve the **current state version**, download **hosted JSON state** to disk, then run **`tf_state_cmdb`** so CMDB-oriented facts are computed and published with **`set_stats`**. |
+| [ansible/configure_web.yml](./ansible/configure_web.yml) | Target hosts (for example **`tag_demo_web`** from Azure dynamic inventory), install and enable **httpd**, open **80/tcp** in firewalld, deploy **index.html** from [ansible/templates/index.html.j2](./ansible/templates/index.html.j2), and optionally set **stats** for ServiceNow **sc_task** / **RITM** updates. |
 
-## The Outcome
+### `tfe_run.yml` expectations
 
-The Ansible configuration playbook will template a landing page based on host variables for the respective Azure VM. Below is an example view from one of my runs:
+- **Environment**: `TF_HOSTNAME` (TFE / Terraform Cloud API host) and `TF_TOKEN` for API calls after the run module completes.  
+- **Workspace**: `tfe_workspace_id` is set in the playbook vars (replace with your workspace ID).  
+- **Terraform variables on the run**: `aap_workflow_url` and `aap_job_url` are passed into the workspace so they are stored with the run and available as Terraform variables / outputs for auditing.
+
+The playbook reads `values.root_module.resources` from the downloaded state file and sets `tf_state_resources` when including `tf_state_cmdb`.
+
+### `configure_web.yml` expectations
+
+- Inventory must include the web VMs (this demo assumes a host pattern like **`tag_demo_web`** and facts such as `computer_name`, `public_ip_address`, and image fields used in [ansible/vars/main.yml](./ansible/vars/main.yml) for the template).  
+- **`become: true`** on the web hosts for package and service tasks.
+
+---
+
+## Mapping Terraform state to ServiceNow CMDB
+
+Role: **`tf_state_cmdb`** ([ansible/roles/tf_state_cmdb/](./ansible/roles/tf_state_cmdb/)).
+
+### Input
+
+- **`tf_state_resources`**: list of resource blocks from Terraform state JSON, typically:
+
+  `(state['values']['root_module']['resources'] | default([]))`
+
+  as wired in [ansible/tfe_run.yml](./ansible/tfe_run.yml).
+
+The role filters by Terraform resource **type** in [ansible/roles/tf_state_cmdb/vars/main.yml](./ansible/roles/tf_state_cmdb/vars/main.yml): resource groups, VNets, subnets, Linux VMs, NICs, managed disks, and data disk attachments.
+
+### Configuration items built
+
+| ServiceNow class | Source (Terraform type) | Notes |
+| --- | --- | --- |
+| `cmdb_ci_azure_datacenter` | Derived unique **locations** from resource groups and VNets | Synthetic “datacenter” per Azure region; `correlation_id` like `azure/<region>` |
+| `cmdb_ci_vpc` | `azurerm_virtual_network` | `correlation_id` = Azure VNet id |
+| `cmdb_ci_subnet` | `azurerm_subnet` | Location / tag metadata inherited from parent VNet match |
+| `cmdb_ci_vm_instance` | `azurerm_linux_virtual_machine` | OS, disk space, public IP, location, tags |
+| `cmdb_ci_nic` | `azurerm_network_interface` | Private IP, MAC, location, tags |
+| `cmdb_ci_storage_volume` | `azurerm_managed_disk` | Size in bytes, location, tags |
+
+`correlation_display` is set to **`aap.terraform.io`** on these CIs so you can identify the integration source in ServiceNow.
+
+### Relationships built
+
+Relationships use the same **correlation_id** style identifiers as the parent/child CIs (Azure resource IDs where applicable, except datacenter child keys use `azure/<region>`).
+
+| Relationship type | Parent | Child |
+| --- | --- | --- |
+| **Located in::Houses** | VNet (`cmdb_ci_vpc`) | Azure datacenter CI for that region |
+| **Located in::Houses** | Subnet (`cmdb_ci_subnet`) | Parent VNet |
+| **Provides storage for::Stored on** | Managed disk (`cmdb_ci_storage_volume`) | VM (`cmdb_ci_vm_instance`) via attachment |
+| **IP Connection::IP Connection** | VM | NIC |
+| **Connects to::Connected by** | NIC | Subnet (from NIC IP configuration `subnet_id`) |
+
+### Output for downstream automation
+
+[ansible/roles/tf_state_cmdb/tasks/main.yml](./ansible/roles/tf_state_cmdb/tasks/main.yml) ends with:
+
+| Stat key | Content |
+| --- | --- |
+| **`sn_manage_resources`** | List of CI payloads; each item has `name`, `sys_class_name`, and `other` (field bag for your Table API upsert or record role) |
+| **`sn_manage_relationships`** | List of relationship payloads (`parent`, `parent_type`, `child`, `child_type`, `type`) |
+
+A workflow job can consume these stats and call your ServiceNow modules or **`zjleblanc.servicenow.records`** (or equivalent) to create or update rows and relationship records idempotently.
+
+---
+
+## Optional ServiceNow ITSM (tasks and request items)
+
+The **CMDB** path above does not require catalog variables. Separately, [ansible/configure_web.yml](./ansible/configure_web.yml) can emit **stats** for classic **task / RITM** updates when you define:
+
+| Variable | Purpose |
+| --- | --- |
+| `sc_task_created` | Per-host dict with `sys_id` (and related fields) for **sc_task** rows to close with work notes |
+| `create_sc_task_data` | Used by the second play; should include **`request_item_sys_id`** for the RITM update |
+| `aap_host`, `awx_workflow_job_id`, `awx_job_id` | Build links to AAP workflow and job output in work notes |
+
+When those are defined, stats such as **`update_sc_task_sys_id`**, **`update_sc_task_data_overrides`**, **`update_ritm_sys_id`**, and **`update_ritm_data_overrides`** are set for a downstream ITSM job to apply.
+
+---
+
+## Outcome (configured web servers)
+
+Ansible templates a simple landing page per VM. Example from a prior run:
 
 ![Terraform Create Web Demo Site](../.attachments/az_create_web_demo_site.png)
 
-## Service Now Integration
+---
 
-The playbooks can track progress in ServiceNow using the [ITSM collection](https://galaxy.ansible.com/ibm/ibm_itsm) (or a compatible ServiceNow/ITSM integration). This is optional: all ITSM-related tasks and variables are gated so the playbooks run normally when no ServiceNow context is provided.
+## Operational notes and lessons learned
 
-### Input variables (from workflow or a prior job)
+**Terraform Cloud / Enterprise**
 
-These are typically provided by a workflow survey or by an earlier job that creates/updates ServiceNow records:
+- Workspace runs are triggered from Ansible with **`hashicorp.terraform.run`**; polling and timeouts are set in [ansible/tfe_run.yml](./ansible/tfe_run.yml).  
+- State is fetched with the **state version** API and the **hosted JSON state download URL** (Bearer token same as `TF_TOKEN`).
 
-| Variable | Purpose |
-| --- | --- |
-| `sc_task_created` | Dict keyed by host; each value has `number` and `sys_id` of the ServiceNow task to update (e.g. from an ITSM “create task” step). |
-| `request_item_sys_id` | `sys_id` of the parent Request Item (RITM) to update when the full deployment is complete. |
-| `aap_host` | AAP controller hostname (optional; used in work notes links). |
-| `awx_workflow_job_id` | Workflow job ID (provided by system when jobs run in AAP) |
-| `awx_job_id` | Playbook job ID (provided by system when jobs run in AAP) |
+**Azure authentication**
 
-### Terraform variable
+- The **azurerm** provider in [providers.tf](./providers.tf) uses **`var.az_*`** credentials. In AAP, **ARM_*** vs **AZURE_*** style credential injectors may differ; map or template variables so Terraform receives the names it expects.  
+- Remote state / backend auth (for example storage account key) is separate from provider auth; **`TF_BACKEND_CONFIG_FILE`** or custom credential types are common for backends.
 
-| Variable | Purpose |
-| --- | --- |
-| `sc_task` | Task number passed into Terraform from `sc_task_created[inventory_hostname]['number']` (or `N/A`). Exposed in [outputs](./outputs.tf) so the task number is stored with the deployment. |
+**Inventory**
 
-### Tasks and stats used for tracking
+- CMDB mapping runs on **localhost** with state JSON only. **configure_web.yml** needs a live inventory (dynamic Azure inventory with the same tags Terraform applies is the typical pattern).
 
-**In [tf_ops.yml](./ansible/tf_ops.yml):**
+**ServiceNow tables and fields**
 
-- **Terraform apply/destroy**
-  Passes `sc_task` (and AAP URLs) into Terraform so state/outputs reference the ServiceNow task.
-- **After a successful apply** (when `sc_task_created` is defined):
-  - **Prep stats for task update** – Builds payload to update the existing task: work notes (workflow/job links + VM details JSON), `close_notes`, and `state: 3` (Closed complete).
-  - **Set stats for task update** – Exposes `update_sc_task_sys_id` and `update_sc_task_data_overrides` for a downstream job to perform the task update via the ITSM collection.
-  - **Set stats for web server task create** – Exposes `create_sc_task_data_overrides` (one entry per VM) so a downstream job can create a child ServiceNow task per host for the “Configure Web Servers” step (e.g. `short_description`: “Ansible initiating configuration of &lt;vm_name&gt;”).
-
-**In [configure_web.yml](./ansible/configure_web.yml):**
-
-- **Per-host task update** (when `sc_task_created` is defined):
-  For each configured web host, sets `update_sc_task_sys_id` and `update_sc_task_data_overrides` with work notes (workflow/job/site links), `close_notes`, and `state: 3` so the per-VM task can be closed.
-- **Request item update** (on localhost):
-  Sets `update_ritm_sys_id` and `update_ritm_data_overrides` with work notes (workflow link), `close_notes`, and `state: 3` so the parent RITM can be closed when AAP + Terraform deployment is complete.
-
-### Stat keys consumed by ITSM update jobs
-
-A workflow or convergence play that uses the ITSM collection should read these stats (set by the playbooks above) and call the appropriate modules to create/update records:
-
-| Stat key | Used to |
-| --- | --- |
-| `update_sc_task_sys_id` | Identify which ServiceNow task (by `sys_id`) to update. |
-| `update_sc_task_data_overrides` | Payload (work_notes, close_notes, state, etc.) for that task update. |
-| `create_sc_task_data_overrides` | Payloads for creating one child task per VM (e.g. for “Configure Web Servers”). |
-| `update_ritm_sys_id` | Identify which Request Item to update. |
-| `update_ritm_data_overrides` | Payload for closing/updating the RITM. |
-
-## Lessons Learned
-
-Authentication
-- Terraform azurerm provider expects **ARM_\*** environment variables to handle login via az client
-- Microsoft Azure Resource Manager Credential Type injects **AZURE_\*** - you must map these in a playbook (or use custom cred type)
-- Terraform azurerm backend has multiple auth options, I was using a storage account key
-  - there are two parameters for the backend that confused me: `key` and `access_key`
-  - `key` is required and is used to name the folder in blob storage used for the projects state
-  - `access_key` is used to authenticate with the storage account, can be supplied via ARM_ACCESS_KEY
-- Built-in Credential Type **Terraform backend configuration** supports injecting the `TF_BACKEND_CONFIG_FILE` environment variable which can be passed to the **cloud.terraform.terraform** module
-  - I put my access_key into this _encrypted_ credential. It could also be source from a third-party vault for additional security.
-  - You could create a custom credential type to inject all of the **ARM_\*** environment variables needed for your use case, and it may even be cleaner if used often. I chose to show it as raw as possible so readers could see the details and clean it up as desired.
+- CMDB classes and relationship types in the role match common ServiceNow patterns; validate against your instance (custom classes or relationship types may require small role adjustments).
