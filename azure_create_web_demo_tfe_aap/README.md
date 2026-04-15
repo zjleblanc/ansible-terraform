@@ -31,30 +31,26 @@ Your AAP workflow should map **`tfe_workspace_id`** (and `TF_HOSTNAME` / `TF_TOK
 4. **ServiceNow CMDB** alignment uses **correlation IDs** derived from Azure resource IDs so repeated runs can target the same logical CIs when your integration upserts by that key.
 
 ```mermaid
-flowchart LR
-  subgraph provision["Provision"]
-    TFE[Terraform Cloud Enterprise]
-    TF[Terraform azurerm]
-    TFE --> TF
-  end
-  subgraph ansible["Ansible"]
-    Run[tfe_run.yml]
-    DL[Download state JSON]
-    CMDB[tf_state_cmdb role]
-    CFG[configure_web.yml]
-    Run --> DL --> CMDB
-    CFG
-  end
-  subgraph snow["ServiceNow"]
-    CIs[CMDB CIs]
-    Rels[CI relationships]
-    ITSM[Optional tasks RITM]
-  end
-  TF --> Run
-  CMDB --> CIs
-  CMDB --> Rels
-  CFG --> ITSM
+flowchart TD
+  GHA[GitHub Actions workflow]
+  AAP[AAP workflow job template]
+  TR[tfe_run.yml]
+  WAIT[Start TFE run auto-apply and poll until finished]
+  AZ[Azure resources via Terraform azurerm]
+  DL[Download hosted JSON state from TFE]
+  MAP[tf_state_cmdb builds CMDB CIs relationships and set_stats]
+  SN[ServiceNow CMDB sync or follow-on job]
+
+  GHA -->|Controller launch API| AAP
+  AAP --> TR
+  TR --> WAIT
+  WAIT -.->|while run executes| AZ
+  WAIT -->|after apply succeeds| DL
+  DL --> MAP
+  MAP --> SN
 ```
+
+The **configure_web.yml** path (configure VMs, optional ITSM task or RITM stats) is usually another job in the same or a separate AAP workflow and is omitted here so the diagram stays focused on **GitHub → AAP → `tfe_run.yml` → TFE → state → ServiceNow CMDB mapping**.
 
 ---
 
