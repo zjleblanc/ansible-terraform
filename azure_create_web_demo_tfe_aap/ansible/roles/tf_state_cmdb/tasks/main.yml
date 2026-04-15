@@ -1,5 +1,5 @@
 - name: Build sn_configuration_items (datacenters)
-  loop: "{{ tf_state_cmdb_dc_location_names}}"
+  loop: "{{ tf_state_cmdb_dc_location_names }}"
   loop_control:
     loop_var: _dc
     label: "{{ _dc }}"
@@ -230,11 +230,3 @@
     data:
       sn_configuration_items: "{{ _sn_configuration_items }}"
       sn_ci_relationships: "{{ _sn_ci_relationships }}"
-
-- name: Debug configuration items
-  ansible.builtin.debug:
-    msg: "{{ _sn_configuration_items }}"
-
-- name: Debug relationships
-  ansible.builtin.debug:
-    msg: "{{ _sn_ci_relationships }}"
