@@ -194,17 +194,17 @@
 - name: Build sn_ci_relationships (NIC to VM)
   loop: "{{ tf_state_cmdb_vms | subelements(['values', 'network_interface_ids'], skip_missing=True) }}"
   loop_control:
-    loop_var: _vm
-    label: "{{ _vm['values']['name'] }}"
+    loop_var: _vm_nic # tuple: ({vm}, network_interface_id)
+    label: "{{ _vm_nic[0]['values']['name'] }}"
   vars:
     _rel:
-      parent: "{{ _vm['values']['id'] }}"
+      parent: "{{ _vm_nic[0]['values']['id'] }}"
       parent_type: cmdb_ci_vm_instance
-      child: "{{ _vm['values']['network_interface_ids'][0] }}"
+      child: "{{ _vm_nic[1] }}"
       child_type: cmdb_ci_nic
       type: IP Connection::IP Connection
   ansible.builtin.set_fact:
-    _rels_nic_vm: "{{ _rels_nic_vm | default([]) + [_rel] }}"
+    _rels_vm_nic: "{{ _rels_vm_nic | default([]) + [_rel] }}"
 
 - name: Build sn_ci_relationships (NIC to subnet)
   loop: "{{ tf_state_cmdb_nics | subelements(['values', 'ip_configuration'], skip_missing=True) }}"
@@ -223,7 +223,7 @@
 
 - name: Assemble sn_ci_relationships
   ansible.builtin.set_fact:
-    _sn_ci_relationships: "{{ (_rels_vnet_dc | default([])) + (_rels_subnet_vnet | default([])) + (_rels_disk_vm | default([])) + (_rels_nic_vm | default([])) + (_rels_nic_subnet | default([])) }}"
+    _sn_ci_relationships: "{{ (_rels_vnet_dc | default([])) + (_rels_subnet_vnet | default([])) + (_rels_disk_vm | default([])) + (_rels_vm_nic | default([])) + (_rels_nic_subnet | default([])) }}"
 
 - name: Set ServiceNow stats
   ansible.builtin.set_stats:
