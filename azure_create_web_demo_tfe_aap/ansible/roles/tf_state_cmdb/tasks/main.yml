@@ -228,5 +228,5 @@
 - name: Set ServiceNow stats
   ansible.builtin.set_stats:
     data:
-      sn_configuration_items: "{{ _sn_configuration_items }}"
-      sn_ci_relationships: "{{ _sn_ci_relationships }}"
+      sn_manage_resources: "{{ _sn_configuration_items }}"
+      sn_manage_relationships: "{{ _sn_ci_relationships }}"
