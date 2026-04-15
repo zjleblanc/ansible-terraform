@@ -209,13 +209,13 @@
 - name: Build sn_ci_relationships (NIC to subnet)
   loop: "{{ tf_state_cmdb_nics | subelements(['values', 'ip_configuration'], skip_missing=True) }}"
   loop_control:
-    loop_var: _nic
-    label: "{{ _nic['values']['name'] }}"
+    loop_var: _nic # tuple: ({nic}, ip_configuration)
+    label: "{{ _nic[0]['values']['name'] }}"
   vars:
     _rel:
-      parent: "{{ _nic['values']['id'] }}"
+      parent: "{{ _nic[0]['values']['id'] }}"
       parent_type: cmdb_ci_nic
-      child: "{{ _nic['values']['ip_configuration'][0].subnet_id }}"
+      child: "{{ _nic[1].subnet_id }}"
       child_type: cmdb_ci_subnet
       type: Connects to::Connected by
   ansible.builtin.set_fact:
