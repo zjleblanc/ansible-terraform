@@ -1,0 +1,121 @@
+---
+# Maps Terraform state resource types to ServiceNow configuration item payloads.
+# Each value is templated with loop var _resource (one element of tf_state_resources for that type).
+sn_manage_resource_maps:
+  azurerm_resource_group:
+    name: "{{ _resource['values']['location'] | lower }}"
+    sys_class_name: cmdb_ci_azure_datacenter
+    other:
+      correlation_id: "azure/{{ _resource['values']['location'] | lower }}"
+      correlation_display: aap.terraform.io
+      short_description: "azure region: {{ _resource['values']['location'] | lower }}"
+  azurerm_virtual_network:
+    name: "{{ _resource['values']['name'] }}"
+    sys_class_name: cmdb_ci_vpc
+    other:
+      correlation_id: "{{ _resource['values']['id'] }}"
+      correlation_display: aap.terraform.io
+      location: "{{ _resource['values']['location'] }}"
+      cost_center: "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
+      owned_by: "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
+      environment: "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
+      short_description: Managed by Terraform
+  azurerm_subnet:
+    name: "{{ _resource['values']['name'] }}"
+    sys_class_name: cmdb_ci_subnet
+    other:
+      correlation_id: "{{ _resource['values']['id'] }}"
+      correlation_display: aap.terraform.io
+      location: "{{ ((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.location | default('', true) }}"
+      cost_center: "{{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.tags | default({})).get('cost-center', '') }}"
+      owned_by: "{{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.tags | default({})).get('owner', '') }}"
+      environment: "{{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.tags | default({})).get('environment', '') }}"
+      short_description: Managed by Terraform
+  azurerm_linux_virtual_machine:
+    name: "{{ _resource['values']['name'] }}"
+    sys_class_name: cmdb_ci_vm_instance
+    other:
+      correlation_id: "{{ _resource['values']['id'] }}"
+      correlation_display: aap.terraform.io
+      os_name: "{{ _resource['values']['source_image_reference'][0].offer }}"
+      os_version: "{{ _resource['values']['source_image_reference'][0].version }}"
+      disk_space: "{{ _resource['values']['os_disk'][0].disk_size_gb | int * 1024 * 1024 * 1024 }}"
+      ip_address: "{{ _resource['values']['public_ip_address'] }}"
+      location: "{{ _resource['values']['location'] }}"
+      cost_center: "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
+      owned_by: "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
+      environment: "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
+      short_description: Managed by Terraform
+  azurerm_network_interface:
+    name: "{{ _resource['values']['name'] }}"
+    sys_class_name: cmdb_ci_nic
+    other:
+      correlation_id: "{{ _resource['values']['id'] }}"
+      correlation_display: aap.terraform.io
+      ip_address: "{{ _resource['values']['private_ip_address'] }}"
+      mac_address: "{{ _resource['values']['mac_address'] }}"
+      location: "{{ _resource['values']['location'] }}"
+      cost_center: "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
+      owned_by: "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
+      environment: "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
+      short_description: Managed by Terraform
+  azurerm_managed_disk:
+    name: "{{ _resource['values']['name'] }}"
+    sys_class_name: cmdb_ci_storage_volume
+    other:
+      correlation_id: "{{ _resource['values']['id'] }}"
+      correlation_display: aap.terraform.io
+      size_bytes: "{{ _resource['values']['disk_size_gb'] | int * 1024 * 1024 * 1024 }}"
+      location: "{{ _resource['values']['location'] }}"
+      cost_center: "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
+      owned_by: "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
+      environment: "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
+      short_description: Managed by Terraform
+
+# Per resource type, a list of relationship dicts (templated with _resource in scope).
+# Optional relationship_when: Jinja expression evaluated to include the row (default true).
+sn_manage_relationship_maps:
+  azurerm_virtual_network:
+    - parent: "{{ _resource['values']['id'] }}"
+      parent_type: cmdb_ci_vpc
+      type: Located in::Houses
+      child: "azure/{{ _resource['values']['location'] | lower }}"
+      child_type: cmdb_ci_azure_datacenter
+  azurerm_subnet:
+    - relationship_when: "{{ (tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address) is not none }}"
+      parent: "{{ _resource['values']['id'] }}"
+      parent_type: cmdb_ci_subnet
+      type: Located in::Houses
+      child: "{{ (tf_state_cmdb_subnet_parent_vnet_by_address[_resource.address])['values']['id'] }}"
+      child_type: cmdb_ci_vpc
+  azurerm_virtual_machine_data_disk_attachment:
+    - parent: "{{ _resource['values']['managed_disk_id'] }}"
+      parent_type: cmdb_ci_storage_volume
+      type: Provides storage for::Stored on
+      child: "{{ _resource['values']['virtual_machine_id'] }}"
+      child_type: cmdb_ci_vm_instance
+
+# Relationships derived from subelements(_resource, path). _item is each inner element.
+sn_manage_relationship_subelement_maps:
+  - resource_type: azurerm_linux_virtual_machine
+    subelements:
+      - values
+      - network_interface_ids
+    skip_missing: true
+    relationships:
+      - parent: "{{ _resource['values']['id'] }}"
+        parent_type: cmdb_ci_vm_instance
+        type: IP Connection::IP Connection
+        child: "{{ _item }}"
+        child_type: cmdb_ci_nic
+  - resource_type: azurerm_network_interface
+    subelements:
+      - values
+      - ip_configuration
+    skip_missing: true
+    relationships:
+      - parent: "{{ _resource['values']['id'] }}"
+        parent_type: cmdb_ci_nic
+        type: Connects to::Connected by
+        child: "{{ _item.subnet_id }}"
+        child_type: cmdb_ci_subnet
