@@ -1,0 +1,12 @@
+---
+resource_type: azurerm_network_interface
+subelements:
+  - values
+  - ip_configuration
+skip_missing: true
+relationships:
+  - parent: "{{ _resource['values']['id'] }}"
+    parent_type: cmdb_ci_nic
+    type: Connects to::Connected by
+    child: "{{ _item.subnet_id }}"
+    child_type: cmdb_ci_subnet

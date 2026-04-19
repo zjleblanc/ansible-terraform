@@ -1,0 +1,15 @@
+---
+name: "{{ _resource['values']['name'] }}"
+sys_class_name: cmdb_ci_vm_instance
+other:
+  correlation_id: "{{ _resource['values']['id'] }}"
+  correlation_display: aap.terraform.io
+  os_name: "{{ _resource['values']['source_image_reference'][0].offer }}"
+  os_version: "{{ _resource['values']['source_image_reference'][0].version }}"
+  disk_space: "{{ _resource['values']['os_disk'][0].disk_size_gb | int * 1024 * 1024 * 1024 }}"
+  ip_address: "{{ _resource['values']['public_ip_address'] }}"
+  location: "{{ _resource['values']['location'] }}"
+  cost_center: "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
+  owned_by: "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
+  environment: "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
+  short_description: Managed by Terraform

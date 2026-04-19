@@ -8,123 +8,26 @@ tf_state_json: null
 # If false, only values.root_module.resources is used (same as slicing state yourself).
 tf_state_cmdb_flatten_child_modules: true
 
-# Maps Terraform state resource types to ServiceNow configuration item payloads.
-# Each value is templated with loop var _resource (one element of tf_state_resources for that type).
-sn_manage_resource_maps:
-  azurerm_resource_group:
-    name: !unsafe "{{ _resource['values']['location'] | lower }}"
-    sys_class_name: cmdb_ci_azure_datacenter
-    other:
-      correlation_id: !unsafe "azure/{{ _resource['values']['location'] | lower }}"
-      correlation_display: aap.terraform.io
-      short_description: !unsafe "azure region: {{ _resource['values']['location'] | lower }}"
-  azurerm_virtual_network:
-    name: !unsafe "{{ _resource['values']['name'] }}"
-    sys_class_name: cmdb_ci_vpc
-    other:
-      correlation_id: !unsafe "{{ _resource['values']['id'] }}"
-      correlation_display: aap.terraform.io
-      location: !unsafe "{{ _resource['values']['location'] }}"
-      cost_center: !unsafe "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
-      owned_by: !unsafe "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
-      environment: !unsafe "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
-      short_description: Managed by Terraform
-  azurerm_subnet:
-    name: !unsafe "{{ _resource['values']['name'] }}"
-    sys_class_name: cmdb_ci_subnet
-    other:
-      correlation_id: !unsafe "{{ _resource['values']['id'] }}"
-      correlation_display: aap.terraform.io
-      location: !unsafe "{{ ((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.location | default('', true) }}"
-      cost_center: !unsafe "{{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.tags | default({})).get('cost-center', '') }}"
-      owned_by: !unsafe "{{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.tags | default({})).get('owner', '') }}"
-      environment: !unsafe "{{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.tags | default({})).get('environment', '') }}"
-      short_description: Managed by Terraform
-  azurerm_linux_virtual_machine:
-    name: !unsafe "{{ _resource['values']['name'] }}"
-    sys_class_name: cmdb_ci_vm_instance
-    other:
-      correlation_id: !unsafe "{{ _resource['values']['id'] }}"
-      correlation_display: aap.terraform.io
-      os_name: !unsafe "{{ _resource['values']['source_image_reference'][0].offer }}"
-      os_version: !unsafe "{{ _resource['values']['source_image_reference'][0].version }}"
-      disk_space: !unsafe "{{ _resource['values']['os_disk'][0].disk_size_gb | int * 1024 * 1024 * 1024 }}"
-      ip_address: !unsafe "{{ _resource['values']['public_ip_address'] }}"
-      location: !unsafe "{{ _resource['values']['location'] }}"
-      cost_center: !unsafe "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
-      owned_by: !unsafe "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
-      environment: !unsafe "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
-      short_description: Managed by Terraform
-  azurerm_network_interface:
-    name: !unsafe "{{ _resource['values']['name'] }}"
-    sys_class_name: cmdb_ci_nic
-    other:
-      correlation_id: !unsafe "{{ _resource['values']['id'] }}"
-      correlation_display: aap.terraform.io
-      ip_address: !unsafe "{{ _resource['values']['private_ip_address'] }}"
-      mac_address: !unsafe "{{ _resource['values']['mac_address'] }}"
-      location: !unsafe "{{ _resource['values']['location'] }}"
-      cost_center: !unsafe "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
-      owned_by: !unsafe "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
-      environment: !unsafe "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
-      short_description: Managed by Terraform
-  azurerm_managed_disk:
-    name: !unsafe "{{ _resource['values']['name'] }}"
-    sys_class_name: cmdb_ci_storage_volume
-    other:
-      correlation_id: !unsafe "{{ _resource['values']['id'] }}"
-      correlation_display: aap.terraform.io
-      size_bytes: !unsafe "{{ _resource['values']['disk_size_gb'] | int * 1024 * 1024 * 1024 }}"
-      location: !unsafe "{{ _resource['values']['location'] }}"
-      cost_center: !unsafe "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
-      owned_by: !unsafe "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
-      environment: !unsafe "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
-      short_description: Managed by Terraform
+# Terraform type keys for outer loops only (plain strings). Do not use sn_manage_resource_maps|list —
+# Ansible still walks the dict and tries to template {{ _resource }} in sibling entries.
+sn_manage_resource_map_types:
+  - azurerm_resource_group
+  - azurerm_virtual_network
+  - azurerm_subnet
+  - azurerm_linux_virtual_machine
+  - azurerm_network_interface
+  - azurerm_managed_disk
 
-# Per resource type, a list of relationship dicts (templated with _resource in scope).
-# Optional relationship_when: Jinja expression evaluated to include the row (default true).
-sn_manage_relationship_maps:
-  azurerm_virtual_network:
-    - parent: !unsafe "{{ _resource['values']['id'] }}"
-      parent_type: cmdb_ci_vpc
-      type: Located in::Houses
-      child: !unsafe "azure/{{ _resource['values']['location'] | lower }}"
-      child_type: cmdb_ci_azure_datacenter
-  azurerm_subnet:
-    - relationship_when: !unsafe "{{ (tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address) is not none }}"
-      parent: !unsafe "{{ _resource['values']['id'] }}"
-      parent_type: cmdb_ci_subnet
-      type: Located in::Houses
-      child: !unsafe "{{ (tf_state_cmdb_subnet_parent_vnet_by_address[_resource.address])['values']['id'] }}"
-      child_type: cmdb_ci_vpc
-  azurerm_virtual_machine_data_disk_attachment:
-    - parent: !unsafe "{{ _resource['values']['managed_disk_id'] }}"
-      parent_type: cmdb_ci_storage_volume
-      type: Provides storage for::Stored on
-      child: !unsafe "{{ _resource['values']['virtual_machine_id'] }}"
-      child_type: cmdb_ci_vm_instance
+sn_manage_relationship_map_types:
+  - azurerm_virtual_network
+  - azurerm_subnet
+  - azurerm_virtual_machine_data_disk_attachment
 
-# Relationships derived from subelements(_resource, path). _item is each inner element.
-sn_manage_relationship_subelement_maps:
-  - resource_type: azurerm_linux_virtual_machine
-    subelements:
-      - values
-      - network_interface_ids
-    skip_missing: true
-    relationships:
-      - parent: !unsafe "{{ _resource['values']['id'] }}"
-        parent_type: cmdb_ci_vm_instance
-        type: IP Connection::IP Connection
-        child: !unsafe "{{ _item }}"
-        child_type: cmdb_ci_nic
-  - resource_type: azurerm_network_interface
-    subelements:
-      - values
-      - ip_configuration
-    skip_missing: true
-    relationships:
-      - parent: !unsafe "{{ _resource['values']['id'] }}"
-        parent_type: cmdb_ci_nic
-        type: Connects to::Connected by
-        child: !unsafe "{{ _item.subnet_id }}"
-        child_type: cmdb_ci_subnet
+# Basenames under files/subelement_maps/ (one spec per file; avoids iterating a list of templated dicts).
+sn_manage_relationship_subelement_spec_names:
+  - azurerm_linux_virtual_machine_nics
+  - azurerm_network_interface_subnets
+
+# Built-in CMDB templates live under files/ci_maps/ and files/rel_maps/ (one Terraform type per file).
+# Subelement specs: files/subelement_maps/. Defining sn_manage_resource_maps as a single dict in vars is not
+# supported: Ansible merges/templates across keys and breaks {{ _resource }} scoping; override by editing those files or forking.

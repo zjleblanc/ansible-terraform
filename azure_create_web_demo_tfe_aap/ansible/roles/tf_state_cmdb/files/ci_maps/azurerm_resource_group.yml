@@ -1,0 +1,7 @@
+---
+name: "{{ _resource['values']['location'] | lower }}"
+sys_class_name: cmdb_ci_azure_datacenter
+other:
+  correlation_id: "azure/{{ _resource['values']['location'] | lower }}"
+  correlation_display: aap.terraform.io
+  short_description: "azure region: {{ _resource['values']['location'] | lower }}"

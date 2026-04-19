@@ -1,0 +1,19 @@
+---
+- name: Load subelement relationship spec {{ sub_rel_spec_name }}
+  ansible.builtin.include_vars:
+    file: "files/subelement_maps/{{ sub_rel_spec_name }}.yml"
+    name: sm_spec
+
+- name: Flatten subelement rows for this spec
+  ansible.builtin.set_fact:
+    _sub_rel_work_queue: "{{ _sub_rel_work_queue + (sub_rel_batch | default([])) }}"
+  vars:
+    sub_rel_batch: |-
+      {% set ns = namespace(queue=[]) %}
+      {% set reslist = tf_state_resources | default([]) | selectattr('type', 'equalto', sm_spec.resource_type) | list | sort(attribute='address') %}
+      {% for pair in reslist | subelements(sm_spec.subelements, sm_spec.skip_missing | default(false) | bool) %}
+      {% for rel in sm_spec.relationships %}
+      {% set _ = ns.queue.append({'resource': pair[0], 'item': pair[1], 'rel': rel}) %}
+      {% endfor %}
+      {% endfor %}
+      {{- ns.queue -}}

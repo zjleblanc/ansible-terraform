@@ -18,7 +18,7 @@ Include the role after you have a list of resource objects from Terraform state 
 
 A concrete example lives in [../../tfe_run.yml](../../tfe_run.yml), which downloads state and passes `tf_state_resources` into this role.
 
-**Optional:** Override any variable from [defaults/main.yml](./defaults/main.yml) via play vars, `include_role` `vars`, group_vars, or a vars file (see [../../desired_transform_maps.yml](../../desired_transform_maps.yml) for a pattern that mirrors the default map keys).
+**Optional:** Override list variables in [defaults/main.yml](./defaults/main.yml) (which Terraform types and subelement specs to process) via play vars, `include_role` `vars`, group_vars, or a vars file. **CI templates, direct relationship templates, and subelement specs** live as YAML under **`files/ci_maps/`**, **`files/rel_maps/`**, and **`files/subelement_maps/`** in the role; extend the role by adding or editing those files (or fork the role), not by supplying a single merged `sn_manage_resource_maps` dict in vars (Ansible’s merge/templating walks all keys and breaks **`{{ _resource }}`** / **`{{ _item }}`** scoping).
 
 ---
 
@@ -34,9 +34,11 @@ A concrete example lives in [../../tfe_run.yml](../../tfe_run.yml), which downlo
 
 | Variable | Description |
 | -------- | ----------- |
-| **`sn_manage_resource_maps`** | Map whose **keys** are Terraform resource **types** (e.g. `azurerm_virtual_network`). Each **value** is a CI **template**: `name`, `sys_class_name`, and `other` (a dict of extra CI fields). All string values are Jinja templates evaluated with **`_resource`** set to the current state resource. |
-| **`sn_manage_relationship_maps`** | Map: Terraform **type** → list of relationship **templates**. Each template has `parent`, `parent_type`, `type` (relationship type label), `child`, `child_type`. Templates run with **`_resource`** in scope. Optional **`relationship_when`**: if present, must evaluate truthy for that row to be emitted (default: include the row). |
-| **`sn_manage_relationship_subelement_maps`** | List of **subelement** specs. Each spec walks nested data on resources of `resource_type` via `subelements`, then emits one relationship row per `(resource, inner_item, relationship template)` combination. Templates use **`_resource`** and **`_item`** (each inner element). Fields: `resource_type`, `subelements` (path list for Ansible’s `subelements` filter), optional `skip_missing`, and `relationships` (same shape as rows in `sn_manage_relationship_maps` without `relationship_when` in the default data). |
+| **`sn_manage_resource_map_types`** | List of Terraform resource **type** strings (e.g. `azurerm_virtual_network`). For each entry, the role loads **`files/ci_maps/<type>.yml`** via `include_vars` when building the CI work queue. That file defines one CI template: `name`, `sys_class_name`, and `other` (dict of extra CI fields). String values are Jinja evaluated later with **`_resource`** set to the current state resource. |
+| **`sn_manage_relationship_map_types`** | List of Terraform **types** that originate **direct** relationship rows. For each entry, the role loads **`files/rel_maps/<type>.yml`**, which contains a top-level **`relationships:`** list. Each list item has `parent`, `parent_type`, `type`, `child`, `child_type` (Jinja with **`_resource`**). Optional **`relationship_when`**: if present, must be truthy for that row to be emitted. |
+| **`sn_manage_relationship_subelement_spec_names`** | Basenames (without `.yml`) of specs under **`files/subelement_maps/`**. Each file is one **subelement** spec: `resource_type`, `subelements` (path for Ansible’s `subelements` filter), optional `skip_missing`, and **`relationships:`** (same row shape as direct maps; Jinja sees **`_resource`** and **`_item`**). |
+
+Templates are **not** kept in a single large dict in `defaults`/`vars`: Ansible merges role variables and can template across sibling keys, which leaves **`{{ _resource }}`** / **`{{ _item }}`** unresolved or empty. **`!unsafe`** is also unsuitable here because it stops later Jinja passes, so output stats would still contain literal template text. Per-type files loaded per iteration avoid both problems.
 
 ### Defined in `vars/main.yml` (role-internal convenience lists)
 
@@ -60,7 +62,7 @@ These are **derived lists** from `tf_state_resources` for common Azure types. Th
 | -------- | ------- |
 | **`tf_state_cmdb_subnet_parent_vnet_by_address`** | Map from subnet resource `address` → parent VNet resource object, built before CIs/relationships so subnet templates can pull tags/location from the parent VNet. |
 
-Internal lists such as `_ci_work_queue`, `_rel_work_queue`, and `_sub_rel_work_queue` are implementation details used while building the final stats.
+Internal lists such as **`_ci_work_queue`**, **`_rel_work_queue`**, and **`_sub_rel_work_queue`** are implementation details used while building the final stats.
 
 ---
 
@@ -74,8 +76,8 @@ For each subnet in `tf_state_cmdb_subnets`, the role finds the matching VNet in 
 
 ### 2. Configuration items (`sn_manage_resources`)
 
-1. **Initialize** empty lists `_sn_configuration_items` and `_sn_ci_relationships`.
-2. **Flatten the CI work queue** (`_ci_work_queue`): for every key/value in `sn_manage_resource_maps`, for every `tf_state_resources` element whose `type` equals that key, append `{ tpl: <map value>, resource: <state resource> }`. Resources are sorted by `address` for stable ordering.
+1. **Initialize** empty lists **`_sn_configuration_items`** and **`_sn_ci_relationships`**.
+2. **Flatten the CI work queue** (`_ci_work_queue`): for each string in **`sn_manage_resource_map_types`**, `include_vars` loads **`files/ci_maps/<type>.yml`** into a short-lived var, then for every `tf_state_resources` element whose **`type`** equals that string, append **`{ tpl: <loaded template>, resource: <state resource> }`**. Resources are sorted by **`address`** for stable ordering.
 3. **For each** queue entry (via `include_tasks` so inner steps stay grouped):
    - Set **`_resource`** and **`_ci_tpl`** from the queue item.
    - Reset **`_ci_other_resolved`**.
@@ -88,16 +90,16 @@ For each subnet in `tf_state_cmdb_subnets`, the role finds the matching VNet in 
      other: "<dict _ci_other_resolved>"
      ```
 
-So **`sn_manage_resource_maps`** defines *what* to emit per Terraform type; the role always produces the same **output shape**: `name`, `sys_class_name`, and `other` suitable for downstream upsert logic.
+The per-type files under **`files/ci_maps/`** define *what* to emit per Terraform type; the role always produces the same **output shape**: `name`, `sys_class_name`, and `other` suitable for downstream upsert logic.
 
-### 3. Direct relationships (`sn_manage_relationship_maps`)
+### 3. Direct relationships (`files/rel_maps/`)
 
-1. **Flatten** (`_rel_work_queue`): for each map entry (Terraform type → list of relationship dicts), for each matching resource, for each relationship dict, append `{ resource, rel }`.
+1. **Flatten** (`_rel_work_queue`): for each type in **`sn_manage_relationship_map_types`**, load **`files/rel_maps/<type>.yml`**, then for each matching resource and each entry under **`relationships:`**, append **`{ resource, rel }`**.
 2. **For each** row, set **`_resource`** and **`_rel_item`**, build a normalized **`_rel_row`** (`parent`, `parent_type`, `type`, `child`, `child_type`), and append to **`_sn_ci_relationships`** when **`_rel_item.relationship_when`** is not defined or evaluates true.
 
-### 4. Subelement relationships (`sn_manage_relationship_subelement_maps`)
+### 4. Subelement relationships (`files/subelement_maps/`)
 
-1. **Flatten** (`_sub_rel_work_queue`): for each spec, take all resources of `resource_type`, apply **`subelements`** with `skip_missing`, then cross product with each template in `relationships`.
+1. **Flatten** (`_sub_rel_work_queue`): for each basename in **`sn_manage_relationship_subelement_spec_names`**, load **`files/subelement_maps/<name>.yml`**, take all resources of **`resource_type`**, apply **`subelements`** with **`skip_missing`**, then cross product with each template in **`relationships:`**.
 2. **For each** row, templates see **`_resource`** and **`_item`** (the inner element, e.g. one NIC id or one `ip_configuration` dict), build **`_rel_row`**, append to **`_sn_ci_relationships`**.
 
 ### 5. Publish for downstream jobs
@@ -118,10 +120,11 @@ Downstream automation should treat **`parent` / `child`** values consistently wi
 ### Add or adjust configuration items
 
 1. Choose the Terraform **`type`** string exactly as it appears in state (e.g. `azurerm_windows_virtual_machine`).
-2. Under **`sn_manage_resource_maps`**, add that key with:
+2. Add **`files/ci_maps/<type>.yml`** (same shape as existing CI files) with:
    - **`name`**, **`sys_class_name`**: Jinja strings using **`_resource`** (e.g. `_resource['values']['name']`, `_resource['address']`).
    - **`other`**: arbitrary keys your ServiceNow integration expects; each value is a Jinja string templated with **`_resource`** in scope.
-3. If you need **another resource type** for lookups (peers, parents), you can:
+3. Append that **`type`** string to **`sn_manage_resource_map_types`** in **`defaults/main.yml`** or override the list in your play.
+4. If you need **another resource type** for lookups (peers, parents), you can:
    - Reference **`tf_state_resources`** with `selectattr` / `json_query` in your Jinja, or
    - Add a filtered list in **`vars/main.yml`** and use it from your templates, or
    - Add a **`set_fact`** task in [tasks/main.yml](./tasks/main.yml) *before* the CI queue build (same pattern as the subnet→VNet index).
@@ -130,16 +133,18 @@ Re-test with a state file that contains the new `type` so `values` paths match y
 
 ### Add or adjust direct relationships
 
-1. Under **`sn_manage_relationship_maps`**, add or extend the list for the Terraform **`type`** that should *originate* the relationship rows.
+1. Add or edit **`files/rel_maps/<type>.yml`** for the Terraform **`type`** that should *originate* the relationship rows (top-level **`relationships:`** list).
 2. Each list item is a dict with **`parent`**, **`parent_type`**, **`type`**, **`child`**, **`child_type`** (all templated with **`_resource`**).
-3. Use **`relationship_when`** when a row should only exist under some condition (see **`azurerm_subnet`** in defaults: only relate subnet to VNet when the parent VNet was resolved).
+3. Ensure **`sn_manage_relationship_map_types`** includes that **`type`** (defaults or play override).
+4. Use **`relationship_when`** when a row should only exist under some condition (see **`azurerm_subnet`** rel map: only relate subnet to VNet when the parent VNet was resolved).
 
 ### Add or adjust subelement-driven relationships
 
-Use **`sn_manage_relationship_subelement_maps`** when the relationship is driven by **each entry in a list** (or nested structure) under `values`, not only scalar fields on the resource:
+Use **`files/subelement_maps/<spec>.yml`** plus an entry in **`sn_manage_relationship_subelement_spec_names`** when the relationship is driven by **each entry in a list** (or nested structure) under `values`, not only scalar fields on the resource:
 
-1. Append a new list element with **`resource_type`**, **`subelements`** (path passed to Ansible’s [`subelements`](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/subelements_filter.html) filter), optional **`skip_missing`**, and **`relationships`** (templates with **`_resource`** and **`_item`**).
-2. Confirm the path exists in your provider’s state shape for that resource type.
+1. Create a new YAML file with **`resource_type`**, **`subelements`** (path passed to Ansible’s [`subelements`](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/subelements_filter.html) filter), optional **`skip_missing`**, and **`relationships:`** (templates with **`_resource`** and **`_item`**).
+2. Add the file’s basename (without `.yml`) to **`sn_manage_relationship_subelement_spec_names`**.
+3. Confirm the path exists in your provider’s state shape for that resource type.
 
 ### Precedence and testing tips
 

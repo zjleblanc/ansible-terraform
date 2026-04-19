@@ -1,0 +1,8 @@
+---
+relationships:
+  - relationship_when: "{{ (tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address) is not none }}"
+    parent: "{{ _resource['values']['id'] }}"
+    parent_type: cmdb_ci_subnet
+    type: Located in::Houses
+    child: "{{ (tf_state_cmdb_subnet_parent_vnet_by_address[_resource.address])['values']['id'] }}"
+    child_type: cmdb_ci_vpc

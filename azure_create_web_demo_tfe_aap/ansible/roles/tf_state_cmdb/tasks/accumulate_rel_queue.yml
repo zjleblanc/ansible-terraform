@@ -1,0 +1,11 @@
+---
+- name: Load relationship rows for Terraform type {{ rel_type_item }}
+  ansible.builtin.include_vars:
+    file: "files/rel_maps/{{ rel_type_item }}.yml"
+    name: _rel_rows_for_type
+
+- name: Append relationship rows for each resource of this type
+  ansible.builtin.include_tasks: append_rel_for_one_resource.yml
+  loop: "{{ tf_state_resources | default([]) | selectattr('type', 'equalto', rel_type_item) | list | sort(attribute='address') }}"
+  loop_control:
+    loop_var: _resource

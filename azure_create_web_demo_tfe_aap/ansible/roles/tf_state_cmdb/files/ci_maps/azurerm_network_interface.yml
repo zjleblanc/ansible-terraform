@@ -1,0 +1,13 @@
+---
+name: "{{ _resource['values']['name'] }}"
+sys_class_name: cmdb_ci_nic
+other:
+  correlation_id: "{{ _resource['values']['id'] }}"
+  correlation_display: aap.terraform.io
+  ip_address: "{{ _resource['values']['private_ip_address'] }}"
+  mac_address: "{{ _resource['values']['mac_address'] }}"
+  location: "{{ _resource['values']['location'] }}"
+  cost_center: "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
+  owned_by: "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
+  environment: "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
+  short_description: Managed by Terraform
