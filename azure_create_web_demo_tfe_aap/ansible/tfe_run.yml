@@ -57,4 +57,4 @@
       ansible.builtin.include_role:
         name: tf_state_cmdb
       vars:
-        tf_state_resources: "{{ (lookup('file', tfe_state_file_dest) | from_json)['values']['root_module']['resources'] | default([]) }}"
+        tf_state_json: "{{ lookup('file', tfe_state_file_dest) | from_json }}"

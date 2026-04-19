@@ -1,4 +1,27 @@
 ---
+- name: Derive tf_state_resources from full Terraform state JSON (optional)
+  when: tf_state_json is not none
+  block:
+    - name: Reset accumulator for module walk
+      ansible.builtin.set_fact:
+        _tf_state_cmdb_accum_resources: []
+
+    - name: Walk root_module and child_modules for managed resources
+      when: tf_state_cmdb_flatten_child_modules | bool
+      ansible.builtin.include_tasks: tf_state_walk.yml
+      vars:
+        __tf_module: "{{ tf_state_json['values']['root_module'] }}"
+
+    - name: Apply flattened resource list
+      when: tf_state_cmdb_flatten_child_modules | bool
+      ansible.builtin.set_fact:
+        tf_state_resources: "{{ _tf_state_cmdb_accum_resources }}"
+
+    - name: Use root module resources only (no child_modules walk)
+      when: not (tf_state_cmdb_flatten_child_modules | bool)
+      ansible.builtin.set_fact:
+        tf_state_resources: "{{ tf_state_json['values']['root_module']['resources'] | default([]) }}"
+
 - name: Set subnet parent vnet index
   ansible.builtin.set_fact:
     tf_state_cmdb_subnet_parent_vnet_by_address: {}
@@ -27,16 +50,17 @@
     _sn_configuration_items: []
     _sn_ci_relationships: []
 
+# Use |- (not >-) so YAML does not fold newlines into spaces between Jinja tags (which produced the string " []").
 - name: Build flattened CI work queue (map entry -> state resource)
   ansible.builtin.set_fact:
-    _ci_work_queue: >-
-      {% set ns = namespace(items=[]) %}
+    _ci_work_queue: |-
+      {% set ns = namespace(queue=[]) %}
       {% for _map in sn_manage_resource_maps | default({}) | dict2items %}
-      {% for _resource in tf_state_resources | selectattr('type', 'equalto', _map.key) | list | sort(attribute='address') %}
-      {% set _ = ns.items.append({'tpl': _map.value, 'resource': _resource}) %}
+      {% for _resource in tf_state_resources | default([]) | selectattr('type', 'equalto', _map.key) | list | sort(attribute='address') %}
+      {% set _ = ns.queue.append({'tpl': _map.value, 'resource': _resource}) %}
       {% endfor %}
       {% endfor %}
-      {{ ns.items }}
+      {{- ns.queue -}}
 
 - name: Build configuration items from sn_manage_resource_maps
   loop: "{{ _ci_work_queue | default([]) }}"
@@ -46,21 +70,21 @@
   vars:
     _resource: "{{ _ci_work.resource }}"
     _ci_tpl: "{{ _ci_work.tpl }}"
-  ansible.builtin.include_tasks: build_ci_configuration_item.yml
+  ansible.builtin.include_tasks: sn_ci_build.yml
 
 # --- Direct relationships (sn_manage_relationship_maps)
 - name: Build flattened relationship work queue (type -> resource -> relationship row)
   ansible.builtin.set_fact:
-    _rel_work_queue: >-
-      {% set ns = namespace(items=[]) %}
+    _rel_work_queue: |-
+      {% set ns = namespace(queue=[]) %}
       {% for re in sn_manage_relationship_maps | default({}) | dict2items %}
-      {% for _resource in tf_state_resources | selectattr('type', 'equalto', re.key) | list | sort(attribute='address') %}
+      {% for _resource in tf_state_resources | default([]) | selectattr('type', 'equalto', re.key) | list | sort(attribute='address') %}
       {% for rel in re.value %}
-      {% set _ = ns.items.append({'resource': _resource, 'rel': rel}) %}
+      {% set _ = ns.queue.append({'resource': _resource, 'rel': rel}) %}
       {% endfor %}
       {% endfor %}
       {% endfor %}
-      {{ ns.items }}
+      {{- ns.queue -}}
 
 - name: Append relationships from sn_manage_relationship_maps
   when: _rel_item.relationship_when | default(true)
@@ -82,17 +106,17 @@
 # --- Subelement relationships (sn_manage_relationship_subelement_maps) ----------------
 - name: Build flattened subelement relationship work queue
   ansible.builtin.set_fact:
-    _sub_rel_work_queue: >-
-      {% set ns = namespace(items=[]) %}
+    _sub_rel_work_queue: |-
+      {% set ns = namespace(queue=[]) %}
       {% for sm in sn_manage_relationship_subelement_maps | default([]) %}
-      {% set reslist = tf_state_resources | selectattr('type', 'equalto', sm.resource_type) | list | sort(attribute='address') %}
+      {% set reslist = tf_state_resources | default([]) | selectattr('type', 'equalto', sm.resource_type) | list | sort(attribute='address') %}
       {% for pair in reslist | subelements(sm.subelements, sm.skip_missing | default(false) | bool) %}
       {% for rel in sm.relationships %}
-      {% set _ = ns.items.append({'resource': pair[0], 'item': pair[1], 'rel': rel}) %}
+      {% set _ = ns.queue.append({'resource': pair[0], 'item': pair[1], 'rel': rel}) %}
       {% endfor %}
       {% endfor %}
       {% endfor %}
-      {{ ns.items }}
+      {{- ns.queue -}}
 
 - name: Append relationships from sn_manage_relationship_subelement_maps
   loop: "{{ _sub_rel_work_queue | default([]) }}"
