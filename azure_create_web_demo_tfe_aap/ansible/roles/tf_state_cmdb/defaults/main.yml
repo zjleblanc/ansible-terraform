@@ -21,11 +21,11 @@ sn_manage_resource_map_types:
 sn_manage_relationship_map_types:
   - azurerm_virtual_network
   - azurerm_subnet
+  - azurerm_network_interface
   - azurerm_virtual_machine_data_disk_attachment
 
 # Basenames under files/subelement_maps/ (one spec per file; avoids iterating a list of templated dicts).
 sn_manage_relationship_subelement_spec_names:
-  - azurerm_linux_virtual_machine_nics
   - azurerm_network_interface_subnets
 
 # Built-in CMDB templates live under files/ci_maps/ and files/rel_maps/ (one Terraform type per file).
