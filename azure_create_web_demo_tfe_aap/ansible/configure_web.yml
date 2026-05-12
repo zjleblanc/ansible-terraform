@@ -1,11 +1,12 @@
 ---
 - name: Ensure correct Python version
-  hosts: localhost
+  hosts: tag_demo_web
   gather_facts: false
 
   tasks:
     - name: Install python 3.9
       when: os_version is version_compare('9', '<')
+      become: true
       ansible.builtin.dnf:
         name: python3.9
         state: present
