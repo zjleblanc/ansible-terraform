@@ -1,28 +1,9 @@
 ---
-- name: Ensure correct Python version
-  hosts: tag_demo_web
-  gather_facts: false
-
-  tasks:
-    - name: Install Python 3.9 using raw shell commands
-      when: os_version is version_compare('9', '<')
-      become: true
-      register: r_dnf
-      raw: dnf install -y python39 python3-dnf
-      changed_when: "'Nothing to do' not in r_dnf.stdout"
-
-    - name: Verify Python 3.9 is now available
-      when: r_dnf is changed
-      register: r_pyversion
-      raw: python3.9 --version
-      failed_when: r_pyversion.rc != 0 and r_pyversion.rc != 127
-
 - name: Configure web server
   hosts: tag_demo_web
   become: true
 
   vars:
-    ansible_python_interpreter: /usr/bin/python3.9
     aap_workflow_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/workflow/{{ awx_workflow_job_id | default('-1') }}/output"
     aap_job_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/playbook/{{ awx_job_id | default('-1') }}/output"
 
