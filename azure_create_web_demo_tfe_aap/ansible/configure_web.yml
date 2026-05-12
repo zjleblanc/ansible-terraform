@@ -8,7 +8,7 @@
       when: os_version is version_compare('9', '<')
       become: true
       register: r_dnf
-      raw: dnf install -y python39
+      raw: dnf install -y python39 python3-dnf
       changed_when: "'Nothing to do' not in r_dnf.stdout"
 
     - name: Verify Python 3.9 is now available
@@ -23,6 +23,7 @@
 
   vars:
     ansible_python_interpreter: /usr/bin/python3.9
+    ansible_package_manager_python_interpreter: /usr/libexec/platform-python
     aap_workflow_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/workflow/{{ awx_workflow_job_id | default('-1') }}/output"
     aap_job_url: "https://{{ aap_host | default('aap.example.com') }}/execution/jobs/playbook/{{ awx_job_id | default('-1') }}/output"
 
