@@ -24,6 +24,7 @@ sn_manage_relationship_map_types:
   - azurerm_virtual_machine_data_disk_attachment
 
 # Basenames under files/subelement_maps/ (one spec per file; avoids iterating a list of templated dicts).
+# In relationships: entries, parent/child are JMESPath against task vars (see tasks/main.yml and role README).
 sn_manage_relationship_subelement_spec_names:
   - azurerm_linux_virtual_machine_network_interfaces
 

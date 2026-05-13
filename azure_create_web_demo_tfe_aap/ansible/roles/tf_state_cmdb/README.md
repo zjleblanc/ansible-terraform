@@ -36,7 +36,7 @@ A concrete example lives in [../../tfe_run.yml](../../tfe_run.yml), which downlo
 | -------- | ----------- |
 | **`sn_manage_resource_map_types`** | List of Terraform resource **type** strings (e.g. `azurerm_virtual_network`). For each entry, the role loads **`files/ci_maps/<type>.yml`** via `include_vars` when building the CI work queue. That file defines one CI template: `name`, `sys_class_name`, and `other` (dict of extra CI fields). String values are Jinja evaluated later with **`_resource`** set to the current state resource. |
 | **`sn_manage_relationship_map_types`** | List of Terraform **types** that originate **direct** relationship rows. For each entry, the role loads **`files/rel_maps/<type>.yml`**, which contains a top-level **`relationships:`** list. Each list item has `parent`, `parent_type`, `type`, `child`, `child_type` (Jinja with **`_resource`**). Optional **`relationship_when`**: if present, must be truthy for that row to be emitted. |
-| **`sn_manage_relationship_subelement_spec_names`** | Basenames (without `.yml`) of specs under **`files/subelement_maps/`**. Each file is one **subelement** spec: `resource_type`, `subelements` (path for Ansible’s `subelements` filter), optional `skip_missing`, and **`relationships:`** (same row shape as direct maps; Jinja sees **`_resource`** and **`_item`**). |
+| **`sn_manage_relationship_subelement_spec_names`** | Basenames (without `.yml`) of specs under **`files/subelement_maps/`**. Each file is one **subelement** spec: `resource_type`, `subelements` (path for Ansible’s `subelements` filter), optional `skip_missing`, and **`relationships:`**. Rows use the same *logical* shape as direct maps (`parent`, `parent_type`, `type`, `child`, `child_type`), but **`parent` and `child` are [JMESPath](https://jmespath.org/) strings** resolved with **`vars \| json_query(...)`** in [tasks/main.yml](./tasks/main.yml) (not Jinja `{{ ... }}` like **`files/rel_maps/`**). Paths are evaluated against playbook **`vars`** where **`_resource`** is the Terraform resource and **`_item`** is the current inner value from `subelements` (see below). |
 
 Templates are **not** kept in a single large dict in `defaults`/`vars`: Ansible merges role variables and can template across sibling keys, which leaves **`{{ _resource }}`** / **`{{ _item }}`** unresolved or empty. **`!unsafe`** is also unsuitable here because it stops later Jinja passes, so output stats would still contain literal template text. Per-type files loaded per iteration avoid both problems.
 
@@ -99,8 +99,14 @@ The per-type files under **`files/ci_maps/`** define *what* to emit per Terrafor
 
 ### 4. Subelement relationships (`files/subelement_maps/`)
 
-1. **Flatten** (`_sub_rel_work_queue`): for each basename in **`sn_manage_relationship_subelement_spec_names`**, load **`files/subelement_maps/<name>.yml`**, take all resources of **`resource_type`**, apply **`subelements`** with **`skip_missing`**, then cross product with each template in **`relationships:`**.
-2. **For each** row, templates see **`_resource`** and **`_item`** (the inner element, e.g. one NIC id or one `ip_configuration` dict), build **`_rel_row`**, append to **`_sn_ci_relationships`**.
+1. **Flatten** (`_sub_rel_work_queue`) in [tasks/accumulate_sub_rel_one_spec.yml](./tasks/accumulate_sub_rel_one_spec.yml): for each basename in **`sn_manage_relationship_subelement_spec_names`**, `include_vars` loads **`files/subelement_maps/<name>.yml`** as **`sm_spec`**. Resources are filtered to **`sm_spec.resource_type`**, sorted by **`address`**, then passed through Ansible’s **`subelements(sm_spec.subelements, skip_missing)`**, which yields **`(resource, item)`** pairs—one **`item`** per entry along the nested path (for example each string in **`values.network_interface_ids`**). For each pair and each dict under **`sm_spec.relationships`**, the task appends **`{ resource, item, rel }`** to the queue. The **`rel`** dict is stored as loaded from YAML; **`rel.parent`** and **`rel.child`** remain **query strings**, not rendered CI ids yet.
+
+2. **Resolve ids in** [tasks/main.yml](./tasks/main.yml): the task *Append subelement relationships from subelement work queue* loops the queue and sets **`_resource`**, **`_item`**, and **`_rel_item`** from each entry. It builds **`_rel_row`** so that:
+   - **`parent`** = `{{ vars | json_query(_rel_item.parent) }}`
+   - **`child`** = `{{ vars | json_query(_rel_item.child) }}`
+   - **`parent_type`**, **`type`**, **`child_type`** are taken verbatim from the spec (literals).
+
+   Because **`json_query`** runs against **`vars`**, the spec should use dotted paths that start from those names (for example **`_resource.values.id`** for the VM’s Azure resource id, **`_item`** when the subelement is already a scalar id string). That produces the same **`parent` / `child`** string ids ServiceNow expects as direct relationship rows, but without embedding Jinja in the subelement YAML file. Each **`_rel_row`** is appended to **`_sn_ci_relationships`**.
 
 ### 5. Publish for downstream jobs
 
@@ -142,13 +148,15 @@ Re-test with a state file that contains the new `type` so `values` paths match y
 
 Use **`files/subelement_maps/<spec>.yml`** plus an entry in **`sn_manage_relationship_subelement_spec_names`** when the relationship is driven by **each entry in a list** (or nested structure) under `values`, not only scalar fields on the resource:
 
-1. Create a new YAML file with **`resource_type`**, **`subelements`** (path passed to Ansible’s [`subelements`](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/subelements_filter.html) filter), optional **`skip_missing`**, and **`relationships:`** (templates with **`_resource`** and **`_item`**).
-2. Add the file’s basename (without `.yml`) to **`sn_manage_relationship_subelement_spec_names`**.
-3. Confirm the path exists in your provider’s state shape for that resource type.
+1. Create a new YAML file with **`resource_type`**, **`subelements`** (path passed to Ansible’s [`subelements`](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/subelements_filter.html) filter), optional **`skip_missing`**, and **`relationships:`**.
+2. In each relationship dict, set **`parent_type`**, **`type`**, and **`child_type`** to the literal strings your integration expects. Set **`parent`** and **`child`** to **JMESPath expressions** (no surrounding `{{ }}`) that **`json_query`** can evaluate against **`vars`** after the main task sets **`_resource`** and **`_item`**. Examples: **`_resource.values.id`**, **`_item`**, or deeper paths if **`_item`** is a dict. Do not copy the Jinja style used under **`files/rel_maps/`** for **`parent`/`child`** here—those direct rows are resolved differently.
+3. Add the file’s basename (without `.yml`) to **`sn_manage_relationship_subelement_spec_names`**.
+4. Confirm the **`subelements`** path exists in your provider’s state shape for that resource type. A working reference is [files/subelement_maps/azurerm_linux_virtual_machine_network_interfaces.yml](./files/subelement_maps/azurerm_linux_virtual_machine_network_interfaces.yml).
 
 ### Precedence and testing tips
 
 - Put **environment-specific** or **workspace-specific** overrides in play vars or a dedicated vars file included by the play; keep **`defaults/main.yml`** as the shared baseline.
 - After changes, run the role against a real **`tf_state_resources`** list and inspect **`hostvars['localhost']['ansible_stats']['data']`** (or the equivalent your environment uses for job stats) for **`sn_manage_resources`** and **`sn_manage_relationships`**.
+- This README’s **usage** and demo wiring refer to [../../tfe_run.yml](../../tfe_run.yml) under **`azure_create_web_demo_tfe_aap/`**. Other playbooks in the repository (including ad-hoc or local test playbooks at the repo root) are **not** documented here.
 
 For more context on how this demo wires state download and stats consumers, see the parent [README.md](../../../README.md) section *Mapping Terraform state to ServiceNow CMDB*.
