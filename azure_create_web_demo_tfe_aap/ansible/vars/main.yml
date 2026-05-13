@@ -1,11 +1,11 @@
 ---
 info_list_kvpairs:
   - key: virtual machine name
-    value: "{{ computer_name }}"
+    value: "{{ inventory_hostname }}"
   - key: ansible host
     value: "{{ ansible_host }}"
   - key: mac address
-    value: "{{ ansible_default_ipv4['macaddress'] }}"
+    value: "{{ mac_address[0] }}"
   - key: public ip addresses
     value: "{{ public_ip_addresses | default([]) | join(',') }}"
   - key: private ip addresses
@@ -13,9 +13,9 @@ info_list_kvpairs:
   - key: image
     value: "{{ image['offer'] }} {{ image['sku'] }}:{{ image['version'] }}"
   - key: virtual machine size
-    value: "{{ size }}"
+    value: "{{ virtual_machine_size }}"
   - key: resource group
-    value: "{{ resource_group_name }}"
+    value: "{{ resource_group }}"
   - key: azure region
     value: "{{ location }}"
   - key: tags
