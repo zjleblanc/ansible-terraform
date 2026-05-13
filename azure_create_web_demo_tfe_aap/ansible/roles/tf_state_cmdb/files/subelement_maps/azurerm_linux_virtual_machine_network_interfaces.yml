@@ -5,8 +5,8 @@ subelements:
   - network_interface_ids
 skip_missing: true
 relationships:
-  - parent: "{{ _resource['values']['id'] }}"
+  - parent: _resource.values.id
     parent_type: cmdb_ci_vm_instance
     type: IP Connection::IP Connection
-    child: "{{ _item }}"
+    child: _item
     child_type: cmdb_ci_nic
