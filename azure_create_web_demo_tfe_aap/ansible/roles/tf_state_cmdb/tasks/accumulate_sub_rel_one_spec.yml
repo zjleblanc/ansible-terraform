@@ -4,6 +4,10 @@
     file: "files/subelement_maps/{{ sub_rel_spec_name }}.yml"
     name: sm_spec
 
+- name: Debug subelement rows
+  ansible.builtin.debug:
+    msg: "{{ tf_state_resources | default([]) | selectattr('type', 'equalto', sm_spec.resource_type) | list | sort(attribute='address') }}"
+
 - name: Flatten subelement rows for this spec
   ansible.builtin.set_fact:
     _sub_rel_work_queue: "{{ _sub_rel_work_queue + (sub_rel_batch | default([])) }}"
