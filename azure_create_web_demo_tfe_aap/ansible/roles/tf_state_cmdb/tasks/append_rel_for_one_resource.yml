@@ -1,0 +1,7 @@
+---
+- name: Append one relationship work row
+  ansible.builtin.set_fact:
+    _rel_work_queue: "{{ _rel_work_queue + [{'resource': _resource, 'rel': rel_item}] }}"
+  loop: "{{ _rel_rows_for_type.relationships }}"
+  loop_control:
+    loop_var: rel_item

@@ -6,11 +6,3 @@ tf_state_cmdb_vms: "{{ tf_state_resources | selectattr('type', 'equalto', 'azure
 tf_state_cmdb_nics: "{{ tf_state_resources | selectattr('type', 'equalto', 'azurerm_network_interface') | list | sort(attribute='address') }}"
 tf_state_cmdb_disks: "{{ tf_state_resources | selectattr('type', 'equalto', 'azurerm_managed_disk') | list | sort(attribute='address') }}"
 tf_state_cmdb_disk_attachments: "{{ tf_state_resources | selectattr('type', 'equalto', 'azurerm_virtual_machine_data_disk_attachment') | list | sort(attribute='address') }}"
-
-tf_state_cmdb_dc_location_names: >-
-  {{
-    (
-      (tf_state_cmdb_rgs | map(attribute='values.location') | list) +
-      (tf_state_cmdb_vnets | map(attribute='values.location') | list)
-    ) | unique | sort
-  }}

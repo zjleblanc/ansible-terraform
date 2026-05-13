@@ -1,0 +1,22 @@
+---
+- name: Reset other-field accumulator for this CI
+  ansible.builtin.set_fact:
+    _ci_other_resolved: {}
+
+- name: Resolve templated other fields for one CI
+  loop: "{{ _ci_tpl.other | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  vars:
+    _ci_other_value: "{{ item.value }}"
+  ansible.builtin.set_fact:
+    _ci_other_resolved: "{{ (_ci_other_resolved | default({})) | combine({ item.key: _ci_other_value }) }}"
+
+- name: Append resolved CI to list
+  vars:
+    _ci_built:
+      name: "{{ _ci_tpl.name }}"
+      sys_class_name: "{{ _ci_tpl.sys_class_name }}"
+      other: "{{ _ci_other_resolved }}"
+  ansible.builtin.set_fact:
+    _sn_configuration_items: "{{ _sn_configuration_items + [_ci_built] }}"

@@ -1,0 +1,7 @@
+---
+relationships:
+  - parent: "{{ _resource['values']['managed_disk_id'] }}"
+    parent_type: cmdb_ci_storage_volume
+    type: Provides storage for::Stored on
+    child: "{{ _resource['values']['virtual_machine_id'] }}"
+    child_type: cmdb_ci_vm_instance

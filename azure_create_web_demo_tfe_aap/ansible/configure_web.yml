@@ -12,6 +12,8 @@
 
   tasks:
     - name: Install httpd
+      vars:
+        ansible_python_interpreter: /usr/libexec/platform-python
       ansible.builtin.package:
         name: httpd
         state: present

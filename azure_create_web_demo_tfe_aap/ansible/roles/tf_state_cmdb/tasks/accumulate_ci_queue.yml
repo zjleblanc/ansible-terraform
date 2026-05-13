@@ -1,0 +1,13 @@
+---
+# One YAML file per Terraform type under files/ci_maps/ so Ansible never walks sibling type templates.
+- name: Load CI template for Terraform type {{ map_type_item }}
+  ansible.builtin.include_vars:
+    file: "files/ci_maps/{{ map_type_item }}.yml"
+    name: _ci_row_tpl
+
+- name: Append CI work row for one state resource
+  ansible.builtin.set_fact:
+    _ci_work_queue: "{{ _ci_work_queue + [{'tpl': _ci_row_tpl, 'resource': _resource}] }}"
+  loop: "{{ tf_state_resources | default([]) | selectattr('type', 'equalto', map_type_item) | list | sort(attribute='address') }}"
+  loop_control:
+    loop_var: _resource

@@ -1,0 +1,7 @@
+---
+relationships:
+  - parent: "{{ _resource['values']['id'] }}"
+    parent_type: cmdb_ci_vpc
+    type: Located in::Houses
+    child: "azure/{{ _resource['values']['location'] | lower }}"
+    child_type: cmdb_ci_azure_datacenter

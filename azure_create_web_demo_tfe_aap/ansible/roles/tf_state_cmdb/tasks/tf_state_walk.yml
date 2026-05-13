@@ -1,0 +1,11 @@
+---
+# Recursive walk of Terraform JSON state values.root_module / child_modules[]. (vars: __tf_module)
+- name: Accumulate Terraform resources from current module
+  ansible.builtin.set_fact:
+    _tf_state_cmdb_accum_resources: "{{ _tf_state_cmdb_accum_resources | default([]) + (__tf_module.resources | default([])) }}"
+
+- name: Recurse into child_modules
+  ansible.builtin.include_tasks: terraform_flatten_module.yml
+  loop: "{{ __tf_module.child_modules | default([]) }}"
+  loop_control:
+    loop_var: __tf_module

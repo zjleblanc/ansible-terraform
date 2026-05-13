@@ -1,0 +1,11 @@
+---
+name: "{{ _resource['values']['name'] }}"
+sys_class_name: cmdb_ci_subnet
+other:
+  correlation_id: "{{ _resource['values']['id'] }}"
+  correlation_display: aap.terraform.io
+  location: "{{ ((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.location | default('', true) }}"
+  cost_center: "{{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.tags | default({})).get('cost-center', '') }}"
+  owned_by: "{{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.tags | default({})).get('owner', '') }}"
+  environment: "{{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({})).get(_resource.address, none) | default(none, true)).values.tags | default({})).get('environment', '') }}"
+  short_description: Managed by Terraform
