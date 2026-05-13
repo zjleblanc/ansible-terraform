@@ -1,6 +1,7 @@
 ---
 relationships:
-  - relationship_when: "{{ ((_resource['values']['ip_configuration'] | default([]) | selectattr('primary', 'equalto', true) | map(attribute='subnet_id') | first | default('', true)) | length) > 0 }}"
+  - relationship_when: "{{ ((_resource['values']['ip_configuration'] | default([]) | selectattr('primary', 'equalto', true) | map(attribute='subnet_id') | first |
+      default('', true)) | length) > 0 }}"
     parent: "{{ _resource['values']['id'] }}"
     parent_type: cmdb_ci_nic
     type: IP Connection::IP Connection

@@ -10,7 +10,7 @@
   vars:
     _ci_other_value: "{{ item.value }}"
   ansible.builtin.set_fact:
-    _ci_other_resolved: "{{ (_ci_other_resolved | default({})) | combine({ item.key: _ci_other_value }) }}"
+    _ci_other_resolved: "{{ (_ci_other_resolved | default({})) | combine({item.key: _ci_other_value}) }}"
 
 - name: Append resolved CI to list
   vars:

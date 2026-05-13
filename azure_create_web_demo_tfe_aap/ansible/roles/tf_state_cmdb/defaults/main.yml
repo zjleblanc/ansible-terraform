@@ -2,8 +2,7 @@
 # When set to the full Terraform state dict (lookup(...)|from_json), the role builds
 # tf_state_resources from ['values']['root_module'] (always bracket 'values'; .values is dict.values()).
 # Optionally walks child_modules (see tf_state_cmdb_flatten_child_modules).
-tf_state_json: null
-
+tf_state_json:
 # If true and tf_state_json is set, concatenate resources from every module in the tree.
 # If false, only values.root_module.resources is used (same as slicing state yourself).
 tf_state_cmdb_flatten_child_modules: true

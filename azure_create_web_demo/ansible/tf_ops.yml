@@ -15,7 +15,6 @@
     tf_project_key: az_web_demo # this is used to identify the remote state in blob storage
     backend_conf: "{{ lookup('ansible.builtin.env', 'TF_BACKEND_CONFIG_FILE') }}"
 
-
   tasks:
     - name: Terraform apply | create_web_demo
       cloud.terraform.terraform:

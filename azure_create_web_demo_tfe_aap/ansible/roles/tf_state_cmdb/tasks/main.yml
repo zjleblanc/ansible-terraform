@@ -44,7 +44,7 @@
         ) | default(none, true)
       }}
   ansible.builtin.set_fact:
-    tf_state_cmdb_subnet_parent_vnet_by_address: "{{ tf_state_cmdb_subnet_parent_vnet_by_address | combine({ item.address: _subnet_parent_vnet }) }}"
+    tf_state_cmdb_subnet_parent_vnet_by_address: "{{ tf_state_cmdb_subnet_parent_vnet_by_address | combine({item.address: _subnet_parent_vnet}) }}"
 
 # --- Configuration items (files/ci_maps/<type>.yml)
 - name: Initialize CMDB accumulators

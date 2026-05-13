@@ -46,7 +46,7 @@
             _update_sc_task_sys_id: "{{ sc_task_created[inventory_hostname]['sys_id'] }}"
             _update_sc_task_data:
               cmdb_ci: "{{ inventory_hostname }}"
-              work_notes:  >-
+              work_notes: >-
                 [code]
                 <p>Ansible Automation Platform Workflow:</p>
                 <a href="{{ aap_workflow_url }}">View Workflow</a>
@@ -82,7 +82,7 @@
     - name: Prep stats for request item update
       ansible.builtin.set_fact:
         _update_ritm_data:
-          work_notes:  >-
+          work_notes: >-
             [code]
             <p>Ansible Automation Platform Workflow:</p>
             <a href="{{ aap_workflow_url }}">View Workflow</a>

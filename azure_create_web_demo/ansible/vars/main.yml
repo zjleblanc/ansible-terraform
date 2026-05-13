@@ -20,4 +20,3 @@ info_list_kvpairs:
     value: "{{ location }}"
   - key: tags
     value: "{{ tags | default([]) | join(',') }}"
-...

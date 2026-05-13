@@ -14,4 +14,3 @@ info_list_kvpairs:
     value: "{{ ansible_all_ipv6_addresses | default([]) | join(',') }}"
   - key: virtual machine size
     value: "{{ ansible_processor_vcpus }}vCPUs, {{ ansible_memtotal_mb }}MB RAM"
-...

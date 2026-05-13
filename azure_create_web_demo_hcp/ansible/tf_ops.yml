@@ -26,7 +26,7 @@
         variables:
           web_demo_ssh_pubkey: "{{ az_ssh_pubkey }}"
           web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
-          sc_task: "{{ sc_task_created[inventory_hostname]['number'] | default('N/A')}}"
+          sc_task: "{{ sc_task_created[inventory_hostname]['number'] | default('N/A') }}"
           aap_job_url: "{{ aap_job_url }}"
           aap_workflow_url: "{{ aap_workflow_url }}"
 
@@ -49,7 +49,7 @@
         variables:
           web_demo_ssh_pubkey: "{{ r_ssh_keypair['public_key'] }}"
           web_vm_size: "{{ az_web_vm_size | default('Standard_DS1_v2') }}"
-          sc_task: "{{ sc_task_created[inventory_hostname]['number'] | default('N/A')}}"
+          sc_task: "{{ sc_task_created[inventory_hostname]['number'] | default('N/A') }}"
           aap_job_url: "{{ aap_job_url }}"
           aap_workflow_url: "{{ aap_workflow_url }}"
 
@@ -58,7 +58,7 @@
       ansible.builtin.set_fact:
         _update_sc_task_sys_id: "{{ sc_task_created[inventory_hostname]['sys_id'] }}"
         _update_sc_task_data:
-          work_notes:  >-
+          work_notes: >-
             [code]
             <p>Ansible Automation Platform Workflow:</p>
             <a href="{{ aap_workflow_url }}">View Workflow</a>
@@ -82,7 +82,8 @@
 
     - name: Set stats for web server task create
       vars:
-        tf_vms_created: "{{ r_tf_apply['outputs']['sn_configuration_items']['value'] | selectattr('sys_class_name', 'equalto', 'cmdb_ci_linux_server') | map(attribute='name') }}"
+        tf_vms_created: "{{ r_tf_apply['outputs']['sn_configuration_items']['value'] | selectattr('sys_class_name', 'equalto', 'cmdb_ci_linux_server') | map(attribute='name')
+          }}"
       when: r_tf_apply is defined
       ansible.builtin.set_stats:
         data: >
