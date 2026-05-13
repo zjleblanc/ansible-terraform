@@ -26,6 +26,7 @@ sn_manage_relationship_map_types:
 # Basenames under files/subelement_maps/ (one spec per file; avoids iterating a list of templated dicts).
 sn_manage_relationship_subelement_spec_names:
   - azurerm_network_interface_subnets
+  - azurerm_linux_virtual_machine_network_interfaces
 
 # Built-in CMDB templates live under files/ci_maps/ and files/rel_maps/ (one Terraform type per file).
 # Subelement specs: files/subelement_maps/. Defining sn_manage_resource_maps as a single dict in vars is not

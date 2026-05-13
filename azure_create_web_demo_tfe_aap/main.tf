@@ -90,6 +90,7 @@ resource "azurerm_network_interface" "web_demo" {
 
   ip_configuration {
     name                          = "web-demo-ip-configuration"
+    primary                       = true
     subnet_id                     = azurerm_subnet.web_demo.id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.web_demo[count.index].id
