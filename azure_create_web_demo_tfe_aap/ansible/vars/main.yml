@@ -7,7 +7,7 @@ info_list_kvpairs:
   - key: mac address
     value: "{{ mac_address[0] }}"
   - key: public ip addresses
-    value: "{{ public_ip_addresses | default([]) | join(',') }}"
+    value: "{{ public_ipv4_address | default([]) | join(',') }}"
   - key: private ip addresses
     value: "{{ private_ip_addresses | default([]) | join(',') }}"
   - key: image
