@@ -2,11 +2,14 @@
 name: "{{ _resource['values']['name'] }}"
 sys_class_name: cmdb_ci_storage_volume
 other:
+  object_id: "{{ _resource['values']['id'] }}"
   correlation_id: "{{ _resource['values']['id'] }}"
   correlation_display: aap.terraform.io
+  storage_type: "{{ _resource['values']['storage_account_type'] }}"
   size_bytes: "{{ _resource['values']['disk_size_gb'] | int * 1024 * 1024 * 1024 }}"
   location: "{{ _resource['values']['location'] }}"
   cost_center: "{{ (_resource['values']['tags'] | default({})).get('cost-center', '') }}"
   owned_by: "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
   environment: "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
   short_description: Managed by Terraform
+  state: in_use

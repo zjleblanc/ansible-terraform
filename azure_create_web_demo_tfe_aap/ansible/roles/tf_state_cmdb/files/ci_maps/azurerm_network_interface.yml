@@ -2,6 +2,7 @@
 name: "{{ _resource['values']['name'] }}"
 sys_class_name: cmdb_ci_nic
 other:
+  object_id: "{{ _resource['values']['id'] }}"
   correlation_id: "{{ _resource['values']['id'] }}"
   correlation_display: aap.terraform.io
   ip_address: "{{ _resource['values']['private_ip_address'] }}"
