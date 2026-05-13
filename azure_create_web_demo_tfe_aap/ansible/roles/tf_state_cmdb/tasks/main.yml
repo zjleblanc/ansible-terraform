@@ -119,13 +119,11 @@
   loop_control:
     label: "{{ item.resource.address }}"
   vars:
-    _resource: "{{ item.resource }}" # used for resource id query
-    _item: "{{ item.item }}" # used for resource id query
     _relationship:
-      parent: "{{ vars | json_query(item.rel.parent) }}"
+      parent: "{{ lookup('ansible.builtin.vars', 'item') | json_query(item.rel.parent) }}"
       parent_type: "{{ item.rel.parent_type }}"
       type: "{{ item.rel.type }}"
-      child: "{{ vars | json_query(item.rel.child) }}"
+      child: "{{ lookup('ansible.builtin.vars', 'item') | json_query(item.rel.child) }}"
       child_type: "{{ item.rel.child_type }}"
   ansible.builtin.set_fact:
     _sn_ci_relationships: "{{ _sn_ci_relationships + [_relationship] }}"
