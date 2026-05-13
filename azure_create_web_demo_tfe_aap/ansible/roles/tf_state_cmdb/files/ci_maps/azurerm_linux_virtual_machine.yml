@@ -16,4 +16,4 @@ other:
   owned_by: "{{ (_resource['values']['tags'] | default({})).get('owner', '') }}"
   environment: "{{ (_resource['values']['tags'] | default({})).get('environment', '') }}"
   short_description: Managed by Terraform
-  state: on
+  state: "on"
