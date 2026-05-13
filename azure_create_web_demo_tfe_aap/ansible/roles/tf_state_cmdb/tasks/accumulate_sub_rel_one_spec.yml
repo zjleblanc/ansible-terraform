@@ -10,7 +10,7 @@
   vars:
     sub_rel_batch: |-
       {% set ns = namespace(queue=[]) %}
-      {% set reslist = tf_state_resources | default([]) | selectattr('type', 'equalto', sm_spec.resource_type) | list | sort(attribute='address') %}
+      {% set reslist = tf_state_resources | default([]) | selectattr('type', 'equalto', sm_spec.resource_type) | list %}
       {% for pair in reslist | subelements(sm_spec.subelements, sm_spec.skip_missing | default(false) | bool) %}
       {% for rel in sm_spec.relationships %}
       {% set _ = ns.queue.append({'resource': pair[0], 'item': pair[1], 'rel': rel}) %}
