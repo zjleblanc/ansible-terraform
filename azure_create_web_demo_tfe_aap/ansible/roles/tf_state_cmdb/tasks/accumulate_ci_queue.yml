@@ -11,3 +11,4 @@
   loop: "{{ tf_state_resources | default([]) | selectattr('type', 'equalto', map_type_item) | list | sort(attribute='address') }}"
   loop_control:
     loop_var: _resource
+    label: "{{ _resource.address }}"
