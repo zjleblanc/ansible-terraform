@@ -5,28 +5,28 @@ other:
   object_id: "{{ _resource['values']['id'] }}"
   correlation_id: "{{ _resource['values']['id'] }}"
   correlation_display: aap.terraform.io
-  location: |
+  location: >-
     {{ (((tf_state_cmdb_subnet_parent_vnet_by_address | default({}))
     .get(_resource['address'], {}) | default({}))['values'] | default({}))
     .get('location','') }}
-  cost_center: |
+  cost_center: >-
     {{ ((((tf_state_cmdb_subnet_parent_vnet_by_address | default({}))
     .get(_resource['address'], {}) | default({}))['values'] | default({}))
     .get('tags',{}) | default({})).get('cost-center', '') }}
-  owned_by: |
+  owned_by: >-
     {{ ((((tf_state_cmdb_subnet_parent_vnet_by_address | default({}))
     .get(_resource['address'], {}) | default({}))['values'] | default({}))
     .get('tags', {}) | default({})).get('owner', '') }}
-  environment: |
+  environment: >-
     {{ ((((tf_state_cmdb_subnet_parent_vnet_by_address | default({}))
     .get(_resource['address'], {}) | default({}))['values'] | default({}))
     .get('tags', {}) | default({})).get('environment', '') }}
   short_description: Managed by Terraform
-  assigned_to: |
+  assigned_to: >-
     {{ ((((tf_state_cmdb_subnet_parent_vnet_by_address | default({}))
     .get(_resource['address'], {}) | default({}))['values'] | default({}))
     .get('tags', {}) | default({})).get('owner', '') }}
-  asset_tag: |
+  asset_tag: >-
     demo:{{ ((((tf_state_cmdb_subnet_parent_vnet_by_address | default({}))
     .get(_resource['address'], {}) | default({}))['values'] | default({}))
     .get('tags', {}) | default({})).get('demo', 'undef') }}
