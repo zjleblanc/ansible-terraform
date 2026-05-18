@@ -116,7 +116,7 @@ resource "azurerm_linux_virtual_machine" "web_demo" {
   source_image_reference {
     publisher = "RedHat"
     offer     = "RHEL"
-    sku       = "810-gen2"
+    sku       = "10-lvm-gen2"
     version   = "latest"
   }
 

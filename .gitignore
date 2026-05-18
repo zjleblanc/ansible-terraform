@@ -2,6 +2,7 @@
 .ansible
 .cache
 .vscode
+local_scripts
 **/.DS_Store
 
 azure_create_web_demo_hcp/.terraform*
