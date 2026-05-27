@@ -47,7 +47,7 @@ jobs:
           AAP_GATEWAY_URL: ${{ vars.AAP_GATEWAY_URL }}
           AAP_OAUTH_TOKEN: ${{ secrets.AAP_OAUTH_TOKEN }}
           AAP_WORKFLOW_JOB_TEMPLATE_ID: ${{ vars.AAP_WORKFLOW_JOB_TEMPLATE_ID }}
-          TFE_WORKSPACE_ID: "ws-3HSFbeWtKGjzwrzG"
+          TFE_WORKSPACE_ID: "ws-U6AG5UYqNHMiFUNg"
           # GitHub → AAP extra_vars (mirrored as job env for the launch jq payload)
           GHA_REPOSITORY: ${{ github.repository }}
           GHA_REF: ${{ github.ref }}
